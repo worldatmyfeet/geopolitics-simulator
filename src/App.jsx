@@ -367,7 +367,7 @@ export default function GeopoliticsSimulator() {
       "HTTP-Referer": window.location.href,
     },
     body: JSON.stringify({
-      model: "meta-llama/llama-3.3-70b-instruct:free",
+      model: "anthropic/claude-sonnet-4-5",
       max_tokens: maxTokens,
       messages: [{ role: "user", content: prompt }],
     }),
