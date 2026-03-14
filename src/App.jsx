@@ -495,7 +495,7 @@ function CountrySelectScreen({ onSelect, apiKey, setApiKey, showApiInput, setSho
           <div style={{display:"flex",gap:8}}>
             <input type="password" placeholder="sk-or-..." value={apiKey} onChange={e=>setApiKey(e.target.value)}
               style={{flex:1,fontSize:13,padding:"7px 10px",borderRadius:"var(--border-radius-md)",border:"0.5px solid var(--color-border-secondary)",background:"var(--color-background-primary)",color:"var(--color-text-primary)"}}/>
-            <button onClick={()=>{window.__GEO_KEY__=apiKey;setShowApiInput(false);}}
+            <button onClick={()=>{window.__GEO_KEY__=apiKey;localStorage.setItem("geo_api_key",apiKey);setShowApiInput(false);}}
               style={{fontSize:13,padding:"7px 16px",borderRadius:"var(--border-radius-md)",border:"0.5px solid var(--color-border-secondary)",cursor:"pointer",background:"var(--color-background-primary)",color:"var(--color-text-primary)"}}>Save</button>
           </div>
         </div>
@@ -605,7 +605,7 @@ export default function GeopoliticsSimulator() {
   const [allEditions,setAllEditions]           = useState([]);
   const [newspaperLoading,setNewspaperLoading] = useState(false);
   const [log,setLog]                           = useState([]);
-  const [apiKey,setApiKey]                     = useState("");
+  const [apiKey,setApiKey]                     = useState(()=>localStorage.getItem("geo_api_key")||"");
   const [showApiInput,setShowApiInput]         = useState(false);
   const [sideTab,setSideTab]                   = useState("alliances");
 
@@ -625,7 +625,7 @@ export default function GeopoliticsSimulator() {
 
   async function callClaude(prompt, maxTokens=700, model=null) {
     const useModel = model || selectedModel;
-    const key=apiKey||window.__GEO_KEY__;
+    const key=apiKey||window.__GEO_KEY__||localStorage.getItem("geo_api_key")||"";
     const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${key}`,"X-Title":"Geopolitics Simulator","anthropic-dangerous-direct-browser-access":"true"},
