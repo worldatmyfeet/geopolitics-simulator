@@ -363,7 +363,7 @@ function WorldEventCard({ event, country, impactedStats, prevStatsBeforeEvent, o
                     <span style={{fontSize:11,color:"#333"}}>{key}</span>
                     <span style={{fontSize:12,fontWeight:500,color:delta>0?"#16a34a":"#dc2626"}}>{delta>0?"+":""}{delta}</span>
                   </div>
-                ))
+                )) 
               }
               {event.oilShock && (
                 <div style={{display:"flex",alignItems:"center",gap:4,background:"#fffbeb",border:"0.5px solid #fcd34d",borderRadius:"var(--border-radius-md)",padding:"3px 9px"}}>
