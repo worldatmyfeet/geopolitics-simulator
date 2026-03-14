@@ -445,7 +445,7 @@ export default function GeopoliticsSimulator() {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${key}`,"HTTP-Referer":window.location.href,"X-Title":"Geopolitics Simulator"},
-      body: JSON.stringify({model: "anthropic/claude-sonnet-4-5",max_tokens:maxTokens,messages:[{role:"user",content:prompt}]}),
+      body: JSON.stringify({model: "anthropic/claude-3-haiku",max_tokens:maxTokens,messages:[{role:"user",content:prompt}]}),
     });
     const data = await res.json();
     if(data.error) throw new Error(data.error.message);
