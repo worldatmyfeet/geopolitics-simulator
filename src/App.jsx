@@ -95,12 +95,13 @@ const NEWS_OUTLETS = [
 ];
 
 const MODELS = [
-  { id:"anthropic/claude-3-haiku",       label:"Claude 3 Haiku (cheapest, fast)" },
-  { id:"anthropic/claude-3.5-haiku",     label:"Claude 3.5 Haiku (better, moderate cost)" },
-  { id:"anthropic/claude-3.5-sonnet",    label:"Claude 3.5 Sonnet (best quality, higher cost)" },
-  { id:"openai/gpt-4o-mini",             label:"GPT-4o Mini (cheap, reliable)" },
-  { id:"openai/gpt-4o",                  label:"GPT-4o (high quality)" },
-  { id:"google/gemini-flash-1.5",        label:"Gemini Flash 1.5 (fast, cheap)" },
+  { id:"anthropic/claude-3-haiku",       label:"Claude 3 Haiku — cheapest, fast ⭐ recommended" },
+  { id:"anthropic/claude-3.5-haiku",     label:"Claude 3.5 Haiku — better quality, moderate cost" },
+  { id:"anthropic/claude-3.5-sonnet",    label:"Claude 3.5 Sonnet — best quality, higher cost" },
+  { id:"openai/gpt-4o-mini",             label:"GPT-4o Mini — cheap, reliable fallback" },
+  { id:"openai/gpt-4o",                  label:"GPT-4o — high quality" },
+  { id:"google/gemini-1.5-flash",        label:"Gemini 1.5 Flash — fast, cheap" },
+  { id:"meta-llama/llama-3.1-8b-instruct", label:"Llama 3.1 8B — very cheap, open source" },
 ];
 
 const COUNTRIES = [
