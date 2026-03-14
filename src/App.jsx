@@ -440,7 +440,7 @@ export default function GeopoliticsSimulator() {
 
   // ── API ──
 
-  async function callClaude(prompt, maxTokens=1400) {
+  async function callClaude(prompt, maxTokens=600) {
     const key = apiKey || window.__GEO_KEY__;
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method:"POST",
