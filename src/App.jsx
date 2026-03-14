@@ -363,7 +363,7 @@ function WorldEventCard({ event, country, impactedStats, prevStatsBeforeEvent, o
                     <span style={{fontSize:11,color:"#333"}}>{key}</span>
                     <span style={{fontSize:12,fontWeight:500,color:delta>0?"#16a34a":"#dc2626"}}>{delta>0?"+":""}{delta}</span>
                   </div>
-                )) 
+                ))
               }
               {event.oilShock && (
                 <div style={{display:"flex",alignItems:"center",gap:4,background:"#fffbeb",border:"0.5px solid #fcd34d",borderRadius:"var(--border-radius-md)",padding:"3px 9px"}}>
@@ -804,9 +804,7 @@ ACTIVE WORLD CRISIS: "${worldEventLog.slice(-1)[0]?.event.title}" — ${worldEve
 
       // Full history for continuity
       const historyCtx = log.length > 0
-        ? "STORY SO FAR:
-" + log.map(l=>`Turn ${l.turn}: Player chose "${l.action}" → ${l.reaction.slice(0,150)}`).join("
-")
+        ? "STORY SO FAR:\n" + log.map(l=>"Turn "+l.turn+": Player chose \""+l.action+"\" \u2192 "+l.reaction.slice(0,150)).join("\n")
         : "This is the first turn.";
 
       const prompt=`You are a master geopolitical thriller writer running a strategy simulation. Write with the urgency of a BBC war correspondent filing from the field. Every turn must feel like a new chapter — not a continuation of the same paragraph.
@@ -823,8 +821,7 @@ PLAYER'S CHOICE THIS TURN: "${action.label}" — ${action.description}
 NARRATIVE PHASE: ${turnPhase}
 ${historyCtx}
 ${activeWeCtx}
-${repeatWarning ? "
-"+repeatWarning : ""}
+${repeatWarning ? "\n"+repeatWarning : ""}
 
 ═══ IRON RULES — VIOLATING THESE RUINS THE GAME ═══
 
