@@ -95,7 +95,7 @@ const NEWS_OUTLETS = [
 ];
 
 const MODELS = [
-  { id:"anthropic/claude-3-haiku",       label:"Claude 3 Haiku — cheapest, fast ⭐ recommended" },
+  { id:"anthropic/claude-3-haiku",       label:"Claude 3 Haiku — cheapest, fast * recommended" },
   { id:"anthropic/claude-3.5-haiku",     label:"Claude 3.5 Haiku — better quality, moderate cost" },
   { id:"anthropic/claude-3.5-sonnet",    label:"Claude 3.5 Sonnet — best quality, higher cost" },
   { id:"openai/gpt-4o-mini",             label:"GPT-4o Mini — cheap, reliable fallback" },
@@ -314,7 +314,7 @@ function StatDeltaPanel({ stats, prevStats }) {
           <div key={key} style={{display:"flex",alignItems:"center",gap:5,background:delta>0?"#f0fdf4":"#fef2f2",border:`0.5px solid ${delta>0?"#86efac":"#fca5a5"}`,borderRadius:"var(--border-radius-md)",padding:"4px 10px"}}>
             <span style={{fontSize:11,color:"var(--color-text-secondary)"}}>{key}</span>
             <span style={{fontSize:12,fontWeight:500,color:delta>0?"#16a34a":"#dc2626"}}>{delta>0?"+":""}{delta}</span>
-            <span style={{fontSize:10,color:"var(--color-text-tertiary)"}}>→ {val}</span>
+            <span style={{fontSize:10,color:"var(--color-text-tertiary)"}}>-> {val}</span>
           </div>
         ))}
       </div>
@@ -501,7 +501,7 @@ function CountrySelectScreen({ onSelect, apiKey, setApiKey, showApiInput, setSho
         </div>
       ):(
         <button onClick={()=>setShowApiInput(true)} style={{fontSize:11,color:"var(--color-text-tertiary)",background:"none",border:"none",cursor:"pointer",padding:"0 0 1.25rem",textDecoration:"underline"}}>
-          {apiKey?"✓ API key set — change":"Set OpenRouter API key (required to play)"}
+          {apiKey?"[YES] API key set — change":"Set OpenRouter API key (required to play)"}
         </button>
       )}
 
@@ -628,7 +628,7 @@ export default function GeopoliticsSimulator() {
     const key=apiKey||window.__GEO_KEY__;
     const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
       method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":`Bearer ${key}`,"HTTP-Referer":window.location.href,"X-Title":"Geopolitics Simulator"},
+      headers:{"Content-Type":"application/json","Authorization":`Bearer ${key}`,"X-Title":"Geopolitics Simulator","anthropic-dangerous-direct-browser-access":"true"},
       body:JSON.stringify({model:useModel,max_tokens:maxTokens,messages:[{role:"user",content:prompt}]}),
     });
     const data=await res.json();
@@ -824,13 +824,13 @@ ${historyCtx}
 ${activeWeCtx}
 ${repeatWarning ? "\n"+repeatWarning : ""}
 
-═══ IRON RULES — VIOLATING THESE RUINS THE GAME ═══
+=== IRON RULES — VIOLATING THESE RUINS THE GAME ===
 
 RULE 1 — EVENTS NOT STATEMENTS:
 worldReaction must describe PHYSICAL EVENTS with named actors:
-✓ GOOD: "Putin's FSB detained three American journalists in Moscow and expelled the US Ambassador within 24 hours."
-✓ GOOD: "The Chinese carrier Liaoning entered the Taiwan Strait. Markets in Tokyo dropped 8% at open."
-✗ BAD: "World leaders expressed concern." "China warned that..." "The US called for restraint."
+[YES] GOOD: "Putin's FSB detained three American journalists in Moscow and expelled the US Ambassador within 24 hours."
+[YES] GOOD: "The Chinese carrier Liaoning entered the Taiwan Strait. Markets in Tokyo dropped 8% at open."
+[NO] BAD: "World leaders expressed concern." "China warned that..." "The US called for restraint."
 
 RULE 2 — MANDATORY STEP CHANGE EACH TURN:
 The newSituation CANNOT echo the previous situation. It MUST contain:
@@ -858,7 +858,7 @@ When triggering gameOver:true, write a vivid 3-sentence gameOverReason that desc
 RULE 5 — WORLD CRISES MUST RESHAPE THE SITUATION:
 If there is an active world crisis listed above, it MUST appear concretely in worldReaction AND in newSituation. It cannot be ignored.
 
-═══ OUTPUT ═══
+=== OUTPUT ===
 Return ONLY valid JSON (no markdown, no + signs before numbers):
 {"worldReaction":"3 sentences of CONCRETE EVENTS. Name leaders by name doing specific things. What physically changed on the ground, in markets, or in governments?","internalConsequence":"1 sentence: a SPECIFIC internal event — a named minister resigned, parliament voted X to Y, protests in [city], a general issued a public statement defying orders.","nonStateActorEvent":null,"newSituation":"3 sentences with a MANDATORY STEP CHANGE. Name at least one new actor or new development. Set a concrete deadline or describe an irreversible event that just occurred.","newActions":[{"id":"a1","label":"5 word max","description":"Concrete action with named tradeoff — who gains, who loses"},{"id":"a2","label":"5 word max","description":"Concrete action with named tradeoff"},{"id":"a3","label":"5 word max","description":"Concrete action with named tradeoff"},{"id":"a4","label":"5 word max","description":"Concrete action with named tradeoff"}],"statChanges":{"Economy":0,"Military":0,"Diplomacy":0,"Stability":0,"GlobalPrestige":0},"strifeChange":0,"relationshipChanges":{"usa":0,"china":0,"russia":0},"gameOver":false,"gameOverReason":null}
 Numbers: plain integers only, NO + signs. Large decisive actions get large stat changes (±8 to ±14). Small timid actions get small changes (±2 to ±5). Check WIN/LOSS CONDITIONS above before setting gameOver.`;
@@ -1069,7 +1069,7 @@ Return this EXACT JSON structure (fill in all fields, keep values short):
             <div style={{marginBottom:12,animation:"fadeUp 0.4s ease 0.2s both"}}>
               <button onClick={handleContinue} className="cont-btn"
                 style={{width:"100%",padding:"13px",borderRadius:"var(--border-radius-lg)",border:"0.5px solid var(--color-border-primary)",background:"var(--color-background-primary)",cursor:"pointer",fontSize:13,fontWeight:500,color:"var(--color-text-primary)",fontFamily:"var(--font-sans)",transition:"background 0.15s"}}>
-                {pendingNext.gameOver?"See Final Outcome →":"Continue to Turn "+(turn+1)+" →"}
+                {pendingNext.gameOver?"See Final Outcome ->":"Continue to Turn "+(turn+1)+" ->"}
               </button>
             </div>
           )}
