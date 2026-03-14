@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-// ── COUNTRY INTELLIGENCE — leader names, real tensions, key relationships ─────
-// This is injected into every prompt to ground scenarios in reality
+// ── COUNTRY INTELLIGENCE ──────────────────────────────────────────────────────
 
 const COUNTRY_INTEL = {
   usa:         { leader:"President (post-2024 election)", capital:"Washington D.C.", currency:"US Dollar", keyRivals:"China, Russia, Iran", keyAllies:"UK, Germany, Japan, Israel, Saudi Arabia", hotIssues:"China tech war, Ukraine aid fatigue, NATO burden-sharing, border crisis, debt ceiling", recentEvents:"AUKUS submarine deal, chip export controls on China, fentanyl sanctions on Mexico" },
@@ -11,26 +10,64 @@ const COUNTRY_INTEL = {
   uk:          { leader:"Prime Minister (post-2024 election)", capital:"London", currency:"Pound Sterling", keyRivals:"Russia, China (investment concerns)", keyAllies:"USA, France, Germany, NATO allies", hotIssues:"Post-Brexit trade friction, Scottish independence, Northern Ireland Protocol, AUKUS, Rwanda asylum policy", recentEvents:"AUKUS nuclear submarine deal, Ukraine military aid, rejoining Horizon science programme" },
   germany:     { leader:"Chancellor (coalition government)", capital:"Berlin", currency:"Euro", keyRivals:"Russia", keyAllies:"France, USA, Poland, NATO", hotIssues:"Energy transition post-Nordstream, rearmament Zeitenwende, far-right AfD surge, Ukraine aid debate, trade dependency on China", recentEvents:"Bundeswehr 100bn rearmament fund, LNG terminal construction, arresting Russian spy networks" },
   japan:       { leader:"Prime Minister (LDP)", capital:"Tokyo", currency:"Japanese Yen", keyRivals:"China, North Korea, Russia (Kurils)", keyAllies:"USA, Australia, South Korea, QUAD", hotIssues:"Article 9 pacifist constitution revision, North Korean missiles, Chinese naval expansion, defence budget doubling", recentEvents:"Defence budget increase to 2% GDP, Tomahawk missile purchase from USA, AUKUS pillar 2 cooperation" },
-  france:      { leader:"Emmanuel Macron (President)", capital:"Paris", currency:"Euro", keyRivals:"Russia, jihadist groups in Sahel", keyAllies:"Germany, USA, EU members, NATO", hotIssues:"Sahel military withdrawal, pension reform protests, EU strategic autonomy, far-right Le Pen threat, nuclear doctrine", recentEvents:"Expelled from Mali/Niger/Burkina Faso, Macron's ambiguous Ukraine troop deployment comments, Seine-Saint-Denis riots" },
+  france:      { leader:"Emmanuel Macron (President)", capital:"Paris", currency:"Euro", keyRivals:"Russia, jihadist groups in Sahel", keyAllies:"Germany, USA, EU members, NATO", hotIssues:"Sahel military withdrawal, pension reform protests, EU strategic autonomy, far-right Le Pen threat, nuclear doctrine", recentEvents:"Expelled from Mali/Niger/Burkina Faso, Macron's ambiguous Ukraine troop deployment comments" },
   iran:        { leader:"Supreme Leader Khamenei, President Pezeshkian", capital:"Tehran", currency:"Iranian Rial", keyRivals:"USA, Israel, Saudi Arabia, Sunni states", keyAllies:"Russia, China, Hezbollah, Houthis, Hamas, Syria", hotIssues:"Nuclear programme 60% enrichment, proxy war network, women's rights protests, JCPOA collapse, drone exports to Russia", recentEvents:"Operation True Promise attack on Israel, Haniyeh assassination in Tehran, Nasrallah killing, Houthi Red Sea attacks" },
   pakistan:    { leader:"PM Shehbaz Sharif, Army Chief Asim Munir", capital:"Islamabad", currency:"Pakistani Rupee", keyRivals:"India, Afghanistan (TTP), USA (tensions)", keyAllies:"China (CPEC), Saudi Arabia, Turkey", hotIssues:"Imran Khan imprisonment, IMF bailout, TTP insurgency, Afghan refugee crisis, CPEC debt, Kashmir", recentEvents:"Imran Khan jailed on corruption charges, military crackdown on PTI, IMF 3bn bailout, border clashes with Afghanistan" },
   turkey:      { leader:"Recep Tayyip Erdoğan (President)", capital:"Ankara", currency:"Turkish Lira", keyRivals:"Greece, UAE (historic), Kurdish groups (PKK)", keyAllies:"NATO (uneasy), Qatar, Pakistan, Azerbaijan", hotIssues:"Sweden/Finland NATO accession delay, S-400 Russian purchase, Kurdish PKK conflict, inflation crisis, Syria buffer zones", recentEvents:"Blocking Sweden's NATO bid then approving, drone exports to Ukraine, Grain deal mediation, normalisation with UAE/Saudi" },
   saudi_arabia:{ leader:"Crown Prince Mohammed bin Salman (MBS)", capital:"Riyadh", currency:"Saudi Riyal", keyRivals:"Iran, Houthi rebels, Qatar (historic)", keyAllies:"UAE, USA, Egypt, Jordan", hotIssues:"Vision 2030 diversification, Yemen war exit, Iran normalisation via China, OPEC+ cuts, Israel normalisation", recentEvents:"China-brokered Iran normalisation, OPEC+ production cuts defying USA, LIV Golf merger, Neom megaproject" },
   israel:      { leader:"PM Benjamin Netanyahu", capital:"Jerusalem (disputed)", currency:"New Israeli Shekel", keyRivals:"Iran, Hamas, Hezbollah, Houthis", keyAllies:"USA, UAE, Bahrain (Abraham Accords)", hotIssues:"Gaza war, West Bank settlements, judicial overhaul protests, Iran nuclear threat, ICC arrest warrant for Netanyahu", recentEvents:"October 7 Hamas attack, Gaza ground offensive, killing of Sinwar, Hezbollah war, Iranian ballistic missile attack" },
-  brazil:      { leader:"Luiz Inácio Lula da Silva (President)", capital:"Brasília", currency:"Brazilian Real", keyRivals:"None direct, tensions with USA (historic)", keyAllies:"Argentina, China, South Africa, BRICS", hotIssues:"Amazon deforestation, Bolsonaro coup attempt trial, BRICS expansion, China trade dependence, inequality", recentEvents:"Bolsonaro charged for coup plot, Amazon protection agreements, BRICS summit hosting, Petrobras oil dividends dispute" },
+  brazil:      { leader:"Luiz Inácio Lula da Silva (President)", capital:"Brasília", currency:"Brazilian Real", keyRivals:"None direct, tensions with USA (historic)", keyAllies:"Argentina, China, South Africa, BRICS", hotIssues:"Amazon deforestation, Bolsonaro coup attempt trial, BRICS expansion, China trade dependence, inequality", recentEvents:"Bolsonaro charged for coup plot, Amazon protection agreements, BRICS summit hosting" },
   poland:      { leader:"Donald Tusk (Prime Minister)", capital:"Warsaw", currency:"Polish Zloty", keyRivals:"Russia, Belarus", keyAllies:"USA, NATO, UK, Baltic states", hotIssues:"Russian border threat, Belarus hybrid warfare/migrants, Ukrainian refugee integration, EU rule-of-law funding, rearmament", recentEvents:"Tusk defeating PiS restoring EU funds, Russian sabotage of infrastructure, largest European army build-up" },
   taiwan:      { leader:"President Lai Ching-te (DPP)", capital:"Taipei", currency:"New Taiwan Dollar", keyRivals:"China (existential)", keyAllies:"USA (informal), Japan, Australia", hotIssues:"Chinese military encirclement exercises, TSMC chip dominance, US arms sales, UN recognition, strait crossings", recentEvents:"PLA record 91 aircraft incursion, TSMC Arizona factory delays, US$19bn arms package, Lai inauguration provocations" },
   afghanistan: { leader:"Supreme Leader Hibatullah Akhundzada (Taliban)", capital:"Kabul", currency:"Afghani", keyRivals:"ISIS-K, USA, Western countries", keyAllies:"Pakistan (uneasy), China (resource deals)", hotIssues:"Women banned from education/work, humanitarian collapse, ISIS-K attacks, opium ban enforcement, UN isolation", recentEvents:"UN special envoy creation, China copper mine deal, girls banned from universities, ISIS-K Kabul attacks" },
   syria:       { leader:"Ahmad al-Sharaa (HTS, post-Assad)", capital:"Damascus", currency:"Syrian Pound", keyRivals:"Israel, ISIS, Kurdish SDF", keyAllies:"Turkey (uneasy)", hotIssues:"Post-Assad reconstruction, HTS governance legitimacy, Israeli airstrikes on military sites, Kurdish autonomy, sanctions", recentEvents:"Assad regime collapse December 2024, HTS taking Damascus, Israeli occupation of buffer zone, EU sanction relief debate" },
-  libya:       { leader:"GNU (Tripoli) vs GNS (Benghazi) — split", capital:"Tripoli/Benghazi (contested)", currency:"Libyan Dinar", keyRivals:"Internal factions", keyAllies:"Turkey (GNU), Russia/Wagner (GNS), UAE/Egypt (GNS)", hotIssues:"East-West government split, Wagner/Russian presence, oil revenue disputes, migration gateway to Europe, Haftar vs Dbeibah", recentEvents:"Haftar kidnapping of oil minister, Wagner rebranded as Africa Corps, EU migration deal attempts" },
-  nepal:       { leader:"PM KP Sharma Oli", capital:"Kathmandu", currency:"Nepalese Rupee", keyRivals:"None direct", keyAllies:"India (historically dominant), China (growing)", hotIssues:"India-China tug-of-war, political instability (multiple PMs), Himalayan border disputes with India, hydropower deals", recentEvents:"China BRI road projects, India blocking Nepal-China trade routes, multiple coalition government collapses" },
-  bangladesh:  { leader:"Muhammad Yunus (interim Chief Adviser)", capital:"Dhaka", currency:"Bangladeshi Taka", keyRivals:"Myanmar (Rohingya)", keyAllies:"India (complex), China (investment)", hotIssues:"Sheikh Hasina ouster, Rohingya refugee crisis (1.2m in Cox's Bazar), garment industry labour rights, climate vulnerability, India relations", recentEvents:"Student revolution ousting Hasina Aug 2024, Yunus installed, India-Bangladesh border tensions, Rohingya camp fires" },
+  libya:       { leader:"GNU (Tripoli) vs GNS (Benghazi) — split", capital:"Tripoli/Benghazi (contested)", currency:"Libyan Dinar", keyRivals:"Internal factions", keyAllies:"Turkey (GNU), Russia/Wagner (GNS), UAE/Egypt (GNS)", hotIssues:"East-West government split, Wagner/Russian presence, oil revenue disputes, migration gateway to Europe", recentEvents:"Haftar kidnapping of oil minister, Wagner rebranded as Africa Corps, EU migration deal attempts" },
+  nepal:       { leader:"PM KP Sharma Oli", capital:"Kathmandu", currency:"Nepalese Rupee", keyRivals:"None direct", keyAllies:"India (historically dominant), China (growing)", hotIssues:"India-China tug-of-war, political instability, Himalayan border disputes with India, hydropower deals", recentEvents:"China BRI road projects, India blocking Nepal-China trade routes, multiple coalition government collapses" },
+  bangladesh:  { leader:"Muhammad Yunus (interim Chief Adviser)", capital:"Dhaka", currency:"Bangladeshi Taka", keyRivals:"Myanmar (Rohingya)", keyAllies:"India (complex), China (investment)", hotIssues:"Sheikh Hasina ouster, Rohingya refugee crisis (1.2m in Cox's Bazar), garment industry labour rights, India tensions", recentEvents:"Student revolution ousting Hasina Aug 2024, Yunus installed, India-Bangladesh border tensions, Rohingya camp fires" },
   ukraine:     { leader:"President Volodymyr Zelensky", capital:"Kyiv", currency:"Ukrainian Hryvnia", keyRivals:"Russia (existential war)", keyAllies:"USA, UK, EU, NATO members", hotIssues:"Active war with Russia, F-16 deployment, mobilisation fatigue, Zaporizhzhia nuclear plant, EU accession, frozen Russian assets", recentEvents:"Kursk incursion into Russia, North Korean troops fighting for Russia, US aid delays, long-range strike permissions" },
   north_korea: { leader:"Kim Jong-un (Supreme Leader)", capital:"Pyongyang", currency:"North Korean Won", keyRivals:"USA, South Korea, Japan", keyAllies:"Russia (new arms deal), China", hotIssues:"ICBM missile tests, nuclear warhead miniaturisation, troops sent to Russia, satellite launches, inter-Korean relations collapse", recentEvents:"Troops deployed to fight in Ukraine, ballistic missile over Japan, Kim-Putin summit, destroying inter-Korean roads" },
-  ethiopia:    { leader:"PM Abiy Ahmed", capital:"Addis Ababa", currency:"Ethiopian Birr", keyRivals:"Egypt (Nile dam), Eritrea (uneasy)", keyAllies:"USA (historic), China (investment)", hotIssues:"Grand Ethiopian Renaissance Dam vs Egypt/Sudan, Tigray war aftermath, Amhara conflict, Red Sea access ambitions, Somaliland deal", recentEvents:"Tigray peace deal implementation, Egypt military threats over dam, Somaliland MOU for Red Sea port access" },
+  ethiopia:    { leader:"PM Abiy Ahmed", capital:"Addis Ababa", currency:"Ethiopian Birr", keyRivals:"Egypt (Nile dam), Eritrea (uneasy)", keyAllies:"USA (historic), China (investment)", hotIssues:"Grand Ethiopian Renaissance Dam vs Egypt/Sudan, Tigray war aftermath, Amhara conflict, Red Sea access ambitions", recentEvents:"Tigray peace deal implementation, Egypt military threats over dam, Somaliland MOU for Red Sea port access" },
 };
 
-// ── ALLIANCES ─────────────────────────────────────────────────────────────────
+// ── WORLD EVENTS CATALOGUE — external crises that fire independently ──────────
+// These represent events in the rest of the world, not player-controlled
+
+const WORLD_EVENTS = [
+  // OIL & ENERGY
+  { id:"gulf_war",      category:"War",        severity:"Critical", icon:"💥", title:"Gulf War Erupts",                  description:"Iran and Saudi Arabia exchange strikes after a proxy clash in Yemen spirals out of control. The Strait of Hormuz is blockaded. Oil prices spike 60% overnight.", economyHit:-12, stabilityHit:-8,  militaryHit:0,  diplomacyHit:-5,  prestigeHit:-3,  strifeHit:10, affectedRegions:["Middle East","Eurasia","South Asia","Asia"], oilShock:true  },
+  { id:"opec_cut",      category:"Economic",   severity:"High",     icon:"🛢️", title:"OPEC+ Emergency Production Cut",  description:"OPEC+ announces a surprise 3 million barrel/day cut citing 'market instability'. Fuel prices surge globally. Importing nations scramble for alternatives.", economyHit:-8,  stabilityHit:-4,  militaryHit:0,  diplomacyHit:-2,  prestigeHit:0,   strifeHit:6,  affectedRegions:["all"],                                       oilShock:true  },
+  { id:"pipeline_bomb", category:"Security",   severity:"High",     icon:"💣", title:"Major Pipeline Sabotaged",         description:"A critical undersea energy pipeline is destroyed in an apparent state-sponsored attack. Energy markets convulse. Three countries immediately blame each other.", economyHit:-7,  stabilityHit:-5,  militaryHit:0,  diplomacyHit:-3,  prestigeHit:0,   strifeHit:5,  affectedRegions:["Europe","Eurasia"],                          oilShock:true  },
+  // WARS & MILITARY
+  { id:"taiwan_blockade",category:"War",       severity:"Critical", icon:"⚓", title:"China Blockades Taiwan Strait",    description:"The PLA Navy has imposed a full naval blockade of Taiwan, calling it a 'military exercise'. Global shipping lanes are disrupted. The US carrier group is moving in.", economyHit:-10, stabilityHit:-6,  militaryHit:-4, diplomacyHit:-8,  prestigeHit:-5,  strifeHit:8,  affectedRegions:["East Asia","Asia","North America"],          oilShock:false },
+  { id:"india_pak_war",  category:"War",       severity:"Critical", icon:"☢️", title:"India-Pakistan Border War",        description:"A terrorist attack attributed to Lashkar-e-Tayyaba has triggered full military mobilisation on both sides of the Line of Control. Nuclear-armed rivals face their most dangerous standoff since 2001.", economyHit:-8,  stabilityHit:-7,  militaryHit:-3, diplomacyHit:-6,  prestigeHit:-4,  strifeHit:12, affectedRegions:["South Asia"],                                oilShock:false },
+  { id:"korea_missiles", category:"Military",  severity:"High",     icon:"🚀", title:"North Korea ICBM Launch",          description:"Kim Jong-un has launched three ICBMs over Japan in what Pyongyang calls a 'strategic warning'. Tokyo activates missile defence. The UN Security Council is in emergency session.", economyHit:-5,  stabilityHit:-4,  militaryHit:-3, diplomacyHit:-4,  prestigeHit:-2,  strifeHit:5,  affectedRegions:["East Asia","North America"],                 oilShock:false },
+  { id:"africa_coup",    category:"Political", severity:"Medium",   icon:"🎖️", title:"Military Coup in West Africa",     description:"A military junta has seized power in a major West African state, expelling French troops and declaring alignment with Russia's Africa Corps. France and the EU are in emergency consultations.", economyHit:-3,  stabilityHit:-3,  militaryHit:0,  diplomacyHit:-4,  prestigeHit:-2,  strifeHit:4,  affectedRegions:["Africa","Europe"],                           oilShock:false },
+  { id:"nato_article5",  category:"War",       severity:"Critical", icon:"🛡️", title:"NATO Article 5 Invoked",           description:"Russia's Wagner forces have crossed into a NATO member state's territory. Article 5 has been formally invoked for the first time in NATO's history. The alliance is mobilising.", economyHit:-9,  stabilityHit:-10, militaryHit:5,  diplomacyHit:-5,  prestigeHit:3,   strifeHit:15, affectedRegions:["Europe","Eurasia","North America"],          oilShock:false },
+  // ECONOMIC SHOCKS
+  { id:"dollar_crash",   category:"Economic",  severity:"Critical", icon:"📉", title:"US Dollar Flash Crash",            description:"A cascade of sovereign debt downgrades and a surprise Fed announcement triggers a historic dollar sell-off. Emerging market currencies collapse. Global trade is in freefall.", economyHit:-14, stabilityHit:-7,  militaryHit:0,  diplomacyHit:-3,  prestigeHit:-5,  strifeHit:10, affectedRegions:["all"],                                       oilShock:false },
+  { id:"chip_shortage",  category:"Economic",  severity:"High",     icon:"💻", title:"Global Semiconductor Collapse",    description:"A Category 5 typhoon has destroyed TSMC's primary fab in Taiwan. The world's chip supply will be cut by 40% for 18 months. Every tech and defence industry on earth just froze.", economyHit:-10, stabilityHit:-5,  militaryHit:-5, diplomacyHit:-2,  prestigeHit:-3,  strifeHit:7,  affectedRegions:["all"],                                       oilShock:false },
+  { id:"trade_collapse", category:"Economic",  severity:"High",     icon:"🚢", title:"Red Sea Trade Route Shutdown",     description:"Houthi missile strikes have now sunk two container ships in the Red Sea. Lloyd's of London has suspended insurance for all vessels. 12% of global trade has ground to a halt.", economyHit:-9,  stabilityHit:-4,  militaryHit:0,  diplomacyHit:-3,  prestigeHit:-2,  strifeHit:6,  affectedRegions:["Middle East","Europe","Asia","South Asia"],  oilShock:true  },
+  { id:"brics_currency", category:"Economic",  severity:"Medium",   icon:"💴", title:"BRICS Launch Rival Reserve Currency", description:"BRICS nations have formally announced a gold-backed settlement currency, with China, Russia, India and Brazil as founding members. The petrodollar faces its most serious challenge since Bretton Woods.", economyHit:-5,  stabilityHit:-2,  militaryHit:0,  diplomacyHit:3,   prestigeHit:-4,  strifeHit:3,  affectedRegions:["all"],                                       oilShock:false },
+  // PANDEMICS & DISASTERS
+  { id:"pandemic2",      category:"Pandemic",  severity:"Critical", icon:"🦠", title:"Novel Pathogen — WHO Emergency",   description:"A highly transmissible respiratory pathogen with 8% case fatality rate has been detected in 12 countries simultaneously. The WHO has declared a Public Health Emergency of International Concern.", economyHit:-13, stabilityHit:-9,  militaryHit:0,  diplomacyHit:2,   prestigeHit:-3,  strifeHit:15, affectedRegions:["all"],                                       oilShock:false },
+  { id:"earthquake",     category:"Disaster",  severity:"High",     icon:"🌋", title:"Mega-Earthquake Hits Major City",   description:"A 8.4 magnitude earthquake has devastated a major regional capital. Over 80,000 are feared dead. International rescue teams are racing against time as aftershocks continue.", economyHit:-6,  stabilityHit:-6,  militaryHit:0,  diplomacyHit:4,   prestigeHit:3,   strifeHit:5,  affectedRegions:["Asia","Middle East","South Asia","Eurasia"], oilShock:false },
+  { id:"drought_famine", category:"Climate",   severity:"High",     icon:"🌵", title:"Catastrophic Drought — Food Crisis", description:"Three consecutive failed monsoon seasons have pushed 200 million people in South Asia and East Africa into acute food insecurity. The UN warns of the worst famine in 40 years.", economyHit:-7,  stabilityHit:-8,  militaryHit:0,  diplomacyHit:-2,  prestigeHit:-2,  strifeHit:12, affectedRegions:["South Asia","Africa","Middle East"],         oilShock:false },
+  { id:"cyber_grid",     category:"Security",  severity:"High",     icon:"⚡", title:"Simultaneous Global Cyberattacks",  description:"Power grids in 8 major cities across Europe and North America have gone dark in a coordinated strike. Attribution is unclear — suspected state actors include Russia, China and a new unknown group.", economyHit:-8,  stabilityHit:-7,  militaryHit:-3, diplomacyHit:-5,  prestigeHit:-3,  strifeHit:8,  affectedRegions:["Europe","North America","Eurasia"],          oilShock:false },
+  // DIPLOMATIC / POLITICAL
+  { id:"un_collapse",    category:"Political", severity:"Medium",   icon:"🏛️", title:"UN Security Council Paralysed",    description:"Russia and China have simultaneously vetoed 7 resolutions in 72 hours, rendering the UN Security Council functionally inoperative. Calls to reform or bypass the Council are growing.", economyHit:-3,  stabilityHit:-4,  militaryHit:0,  diplomacyHit:-8,  prestigeHit:-3,  strifeHit:3,  affectedRegions:["all"],                                       oilShock:false },
+  { id:"refugee_wave",   category:"Humanitarian",severity:"High",   icon:"🏕️", title:"Refugee Wave — 5 Million Displaced", description:"The collapse of a regional government has triggered mass displacement. Five million refugees are moving across borders simultaneously. Receiving nations are overwhelmed and closing crossings.", economyHit:-6,  stabilityHit:-6,  militaryHit:0,  diplomacyHit:-4,  prestigeHit:-2,  strifeHit:10, affectedRegions:["Middle East","Europe","South Asia","Africa"], oilShock:false },
+  { id:"assassination",  category:"Political", severity:"High",     icon:"🎯", title:"World Leader Assassinated",        description:"A major world leader has been assassinated in their capital. The method suggests a sophisticated state actor. Emergency successions are underway amid global shock and rising tensions.", economyHit:-5,  stabilityHit:-8,  militaryHit:0,  diplomacyHit:-6,  prestigeHit:-3,  strifeHit:8,  affectedRegions:["all"],                                       oilShock:false },
+  { id:"space_incident", category:"Military",  severity:"Medium",   icon:"🛰️", title:"Satellite Destroyed — Space Race Crisis", description:"A major power has destroyed a rival's military satellite in low Earth orbit, creating a debris field that threatens 400 other satellites. Space-based communications and GPS are degrading globally.", economyHit:-5,  stabilityHit:-4,  militaryHit:-4, diplomacyHit:-5,  prestigeHit:-2,  strifeHit:5,  affectedRegions:["all"],                                       oilShock:false },
+  { id:"nuclear_test",   category:"Military",  severity:"Critical", icon:"☢️", title:"Rogue Nuclear Test Detected",      description:"Seismic sensors have detected a 50-kiloton underground explosion. A non-NPT state has joined the nuclear club. The international non-proliferation regime has effectively collapsed.", economyHit:-7,  stabilityHit:-8,  militaryHit:-5, diplomacyHit:-8,  prestigeHit:-5,  strifeHit:10, affectedRegions:["all"],                                       oilShock:false },
+  { id:"ai_crash",       category:"Economic",  severity:"High",     icon:"🤖", title:"AI Infrastructure Catastrophic Failure", description:"A cascading failure in AI-controlled financial systems has triggered $4 trillion in automated sell orders in 11 minutes. Markets are circuit-broken globally. The cause is unknown — sabotage or bug.", economyHit:-11, stabilityHit:-5,  militaryHit:0,  diplomacyHit:-2,  prestigeHit:-3,  strifeHit:7,  affectedRegions:["all"],                                       oilShock:false },
+  { id:"arctic_claim",   category:"Political", severity:"Medium",   icon:"🧊", title:"Arctic Sovereignty Claim — Standoff", description:"Russia has planted flags and deployed submarines claiming a newly ice-free Arctic corridor. Canada, Norway and Denmark have scrambled forces. The Arctic Council has suspended operations.", economyHit:-3,  stabilityHit:-3,  militaryHit:-2, diplomacyHit:-5,  prestigeHit:-2,  strifeHit:4,  affectedRegions:["Europe","North America","Eurasia"],          oilShock:false },
+];
+
+const SEV_COLOR = { Critical:"#ef4444", High:"#f59e0b", Medium:"#3b82f6" };
+const SEV_BG    = { Critical:"#fef2f2", High:"#fffbeb", Medium:"#eff6ff" };
+const CAT_ICON  = { War:"⚔️", Economic:"📊", Security:"🔒", Pandemic:"🦠", Disaster:"🌋", Climate:"🌍", Political:"🏛️", Humanitarian:"🏕️", Military:"🛡️" };
+
+// ── ALLIANCES / ACTORS / COUNTRIES ───────────────────────────────────────────
 
 const ALLIANCES = {
   NATO:       { name:"NATO",        color:"#3b82f6", members:["usa","uk","germany","poland","france","turkey"],               description:"Collective defence — Article 5 mutual defence" },
@@ -72,7 +109,7 @@ const COUNTRIES = [
   { id:"saudi_arabia",name:"Saudi Arabia",   flag:"🇸🇦", region:"Middle East",   power:"Regional Power",gdp:1100,  military:65,  diplomacy:72, stability:68, internalStrife:22, alliances:["ARAB_LEAGUE"],        threats:["houthis","isis"],       traits:"MBS Vision 2030, OPEC+ kingpin, Yemen war exit strategy, normalisation with Israel paused" },
   { id:"israel",      name:"Israel",         flag:"🇮🇱", region:"Middle East",   power:"Regional Power",gdp:530,   military:80,  diplomacy:55, stability:62, internalStrife:40, alliances:[],                    threats:["hamas","hezbollah"],    traits:"Netanyahu government, Gaza war, Iran nuclear threat, ICC arrest warrant, judicial crisis" },
   { id:"brazil",      name:"Brazil",         flag:"🇧🇷", region:"South America", power:"Regional Power",gdp:2100,  military:55,  diplomacy:70, stability:62, internalStrife:28, alliances:["BRICS"],              threats:[],                      traits:"Lula's return, BRICS leadership, Amazon protection vs development, Bolsonaro coup trial" },
-  { id:"poland",      name:"Poland",         flag:"🇵🇱", region:"Europe",        power:"Middle Power",  gdp:750,   military:60,  diplomacy:65, stability:72, internalStrife:25, alliances:["NATO"],               threats:[],                      traits:"Tusk government, Russia border threat, largest European army build-up, EU rule-of-law restoration" },
+  { id:"poland",      name:"Poland",         flag:"🇵🇱", region:"Europe",        power:"Middle Power",  gdp:750,   military:60,  diplomacy:65, stability:72, internalStrife:25, alliances:["NATO"],               threats:[],                      traits:"Tusk government, Russia border threat, largest European army build-up" },
   { id:"taiwan",      name:"Taiwan",         flag:"🇹🇼", region:"East Asia",     power:"Middle Power",  gdp:790,   military:55,  diplomacy:40, stability:75, internalStrife:15, alliances:[],                    threats:[],                      traits:"Lai Ching-te presidency, TSMC chip dominance, PLA encirclement exercises, US informal ally" },
   { id:"afghanistan", name:"Afghanistan",    flag:"🇦🇫", region:"South Asia",    power:"Weak State",    gdp:15,    military:30,  diplomacy:15, stability:20, internalStrife:80, alliances:[],                    threats:["isis","ttp","alnusra"],  traits:"Taliban under Akhundzada, women banned from education, ISIS-K insurgency, UN isolation" },
   { id:"syria",       name:"Syria",          flag:"🇸🇾", region:"Middle East",   power:"Weak State",    gdp:22,    military:38,  diplomacy:20, stability:18, internalStrife:82, alliances:["ARAB_LEAGUE"],        threats:["isis","alnusra"],       traits:"Post-Assad HTS governance under al-Sharaa, Israeli airstrikes, Kurdish SDF autonomy, sanctions" },
@@ -117,31 +154,72 @@ function getRelatedActors(country) {
   }
   return actors;
 }
-function getIntel(countryId) {
-  return COUNTRY_INTEL[countryId] || null;
-}
+function getIntel(id) { return COUNTRY_INTEL[id]||null; }
 function buildIntelBlock(country) {
-  const intel = getIntel(country.id);
-  if(!intel) return country.traits;
-  return `Leader: ${intel.leader} | Capital: ${intel.capital}
-Key rivals: ${intel.keyRivals} | Key allies: ${intel.keyAllies}
-Live issues: ${intel.hotIssues}
-Recent events: ${intel.recentEvents}`;
+  const i=getIntel(country.id);
+  if(!i) return country.traits;
+  return `Leader: ${i.leader} | Capital: ${i.capital}\nKey rivals: ${i.keyRivals} | Key allies: ${i.keyAllies}\nLive issues: ${i.hotIssues}\nRecent events: ${i.recentEvents}`;
 }
 
-// ── ROBUST JSON PARSER ────────────────────────────────────────────────────────
+// Pick a world event that hasn't fired yet, biased toward relevant events
+function pickWorldEvent(firedIds, country) {
+  const pool = WORLD_EVENTS.filter(e => !firedIds.includes(e.id));
+  if(!pool.length) return null;
+  // Weight: events affecting player's region score 3x
+  const weighted = [];
+  for(const e of pool) {
+    const relevant = e.affectedRegions.includes("all") || e.affectedRegions.includes(country.region);
+    weighted.push(e, e); // base 2
+    if(relevant) weighted.push(e); // +1 weight if relevant
+  }
+  return weighted[Math.floor(Math.random() * weighted.length)];
+}
+
+// Apply world event stat impacts to player stats
+function applyWorldEvent(event, country, stats, strife) {
+  const inRegion = event.affectedRegions.includes("all") || event.affectedRegions.includes(country.region);
+  const mult = inRegion ? 1.0 : 0.4; // remote events have reduced impact
+  return {
+    Economy:        clamp(stats.Economy        + Math.round(event.economyHit   * mult)),
+    Military:       clamp(stats.Military       + Math.round(event.militaryHit  * mult)),
+    Diplomacy:      clamp(stats.Diplomacy      + Math.round(event.diplomacyHit * mult)),
+    Stability:      clamp(stats.Stability      + Math.round(event.stabilityHit * mult)),
+    GlobalPrestige: clamp(stats.GlobalPrestige + Math.round(event.prestigeHit  * mult)),
+    newStrife:      Math.max(0, Math.min(100, strife + Math.round(event.strifeHit * mult))),
+  };
+}
 
 function safeParseJSON(raw) {
-  const cleaned = raw
+  // Step 1: basic cleanup
+  let s = raw
     .replace(/```json|```/g,"")
     .replace(/:\s*\+(\d)/g,": $1")
     .replace(/,(\s*[}\]])/g,"$1")
+    .replace(/[\u0000-\u001F\u007F]/g," ")
     .trim();
-  // Find first { to last } in case model adds preamble text
-  const start = cleaned.indexOf("{");
-  const end   = cleaned.lastIndexOf("}");
-  if(start===-1||end===-1) throw new Error("No JSON object found in response");
-  return JSON.parse(cleaned.slice(start, end+1));
+  // Step 2: extract outermost object
+  const start=s.indexOf("{"); const end=s.lastIndexOf("}");
+  if(start===-1||end===-1) throw new Error("No JSON found in response");
+  s=s.slice(start,end+1);
+  // Step 3: direct parse
+  try{ return JSON.parse(s); } catch(_){}
+  // Step 4: repair truncated JSON by closing unclosed brackets
+  const stack=[]; let inStr=false; let esc=false;
+  for(let i=0;i<s.length;i++){
+    const c=s[i];
+    if(esc){esc=false;continue;}
+    if(c==="\\" &&inStr){esc=true;continue;}
+    if(c==='"'){inStr=!inStr;continue;}
+    if(inStr) continue;
+    if(c==="{"||c==="[") stack.push(c);
+    else if((c==="}"||c==="]")&&stack.length) stack.pop();
+  }
+  let repaired=s.replace(/,\s*$/,"");
+  for(let i=stack.length-1;i>=0;i--){
+    repaired+=stack[i]==="{"?"}":")";
+  }
+  try{ return JSON.parse(repaired); }
+  catch(e2){ throw new Error("JSON repair failed: "+e2.message.slice(0,80)); }
 }
 
 // ── STYLES ────────────────────────────────────────────────────────────────────
@@ -149,13 +227,16 @@ function safeParseJSON(raw) {
 const G = `
   @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
   @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes slideDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
   .action-btn:hover{border-color:var(--color-border-primary)!important;background:var(--color-background-secondary)!important;}
   .country-btn:hover{border-color:var(--color-border-primary)!important;}
   .paper-tab:hover{opacity:0.85;}
   .cont-btn:hover{background:var(--color-background-secondary)!important;}
   .press-btn:hover{border-color:#a09880!important;background:#f0ece0!important;}
   .scen-btn:hover{border-color:var(--color-border-primary)!important;background:var(--color-background-secondary)!important;}
+  .world-event-respond:hover{border-color:var(--color-border-primary)!important;background:var(--color-background-secondary)!important;}
 `;
 
 // ── UI ATOMS ──────────────────────────────────────────────────────────────────
@@ -176,8 +257,8 @@ function StatPill({ label, value }) {
   const color=value>65?"#22c55e":value>35?"#f59e0b":"#ef4444";
   return (
     <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:"var(--border-radius-md)",padding:"10px 8px",textAlign:"center"}}>
-      <div style={{fontSize:9,color:"var(--color-text-tertiary)",fontFamily:"var(--font-mono)",marginBottom:4,letterSpacing:"0.08em"}}>{label.slice(0,5).toUpperCase()}</div>
-      <div style={{fontSize:17,fontWeight:500,color,lineHeight:1}}>{value}</div>
+      <div style={{fontSize:9,color:"var(--color-text-tertiary)",fontFamily:"var(--font-mono)",marginBottom:4}}>{label.slice(0,5).toUpperCase()}</div>
+      <div style={{fontSize:17,fontWeight:500,color}}>{value}</div>
     </div>
   );
 }
@@ -211,18 +292,10 @@ function TypewriterText({ text, speed=13, onDone }) {
   },[text]);
   return <span>{disp}{!done&&<span style={{opacity:0.4,animation:"blink 0.8s infinite"}}>▌</span>}</span>;
 }
-
-// ── STAT DELTA PANEL ──────────────────────────────────────────────────────────
-
 function StatDeltaPanel({ stats, prevStats }) {
   if(!prevStats) return null;
   const changes=STAT_KEYS.map(k=>({key:k,val:stats[k],delta:stats[k]-prevStats[k]})).filter(x=>x.delta!==0);
-  if(!changes.length) return (
-    <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:"var(--border-radius-md)",padding:"10px 14px",animation:"fadeUp 0.4s ease 0.1s both"}}>
-      <SectionLabel>Score changes this turn</SectionLabel>
-      <div style={{fontSize:12,color:"var(--color-text-secondary)"}}>No stat changes this turn.</div>
-    </div>
-  );
+  if(!changes.length) return null;
   return (
     <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:"var(--border-radius-md)",padding:"10px 14px",animation:"fadeUp 0.4s ease 0.1s both"}}>
       <SectionLabel>Score changes this turn</SectionLabel>
@@ -239,7 +312,76 @@ function StatDeltaPanel({ stats, prevStats }) {
   );
 }
 
-// ── NEWSPAPER PANEL ───────────────────────────────────────────────────────────
+// ── WORLD EVENT CARD ──────────────────────────────────────────────────────────
+
+function WorldEventCard({ event, country, impactedStats, prevStatsBeforeEvent, onRespond, onDismiss }) {
+  const [expanded, setExpanded] = useState(true);
+  const inRegion = event.affectedRegions.includes("all") || event.affectedRegions.includes(country.region);
+  const sevColor = SEV_COLOR[event.severity] || "#888";
+  const sevBg    = SEV_BG[event.severity]    || "#f9f9f9";
+
+  // Compute what changed
+  const changes = STAT_KEYS.map(k=>({key:k,delta:impactedStats[k]-(prevStatsBeforeEvent[k]||60)})).filter(x=>x.delta!==0);
+
+  return (
+    <div style={{border:`1.5px solid ${sevColor}`,borderRadius:"var(--border-radius-lg)",overflow:"hidden",animation:"slideDown 0.4s ease, shake 0.4s ease 0.1s",marginBottom:14}}>
+      {/* Header bar */}
+      <div style={{background:sevColor,padding:"8px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:18}}>{event.icon}</span>
+          <div>
+            <div style={{fontSize:9,color:"rgba(255,255,255,0.8)",letterSpacing:"0.12em",fontFamily:"var(--font-mono)"}}>
+              {CAT_ICON[event.category]||"🌐"} WORLD EVENT — {event.severity.toUpperCase()} {inRegion?"· YOUR REGION AFFECTED":"· GLOBAL"}
+            </div>
+            <div style={{fontSize:14,fontWeight:500,color:"#fff",lineHeight:1.2}}>{event.title}</div>
+          </div>
+        </div>
+        <button onClick={()=>setExpanded(x=>!x)} style={{background:"none",border:"none",color:"rgba(255,255,255,0.7)",cursor:"pointer",fontSize:14,padding:"2px 6px"}}>{expanded?"▲":"▼"}</button>
+      </div>
+
+      {expanded && (
+        <div style={{background:sevBg,padding:"12px 14px"}}>
+          <p style={{fontSize:13,lineHeight:1.7,color:"#1a1a1a",margin:"0 0 12px"}}>{event.description}</p>
+
+          {/* Impact summary */}
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:10,letterSpacing:"0.1em",fontFamily:"var(--font-mono)",color:"#666",marginBottom:6}}>IMMEDIATE IMPACT ON YOUR NATION</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+              {changes.length===0
+                ? <span style={{fontSize:11,color:"#888"}}>Minimal direct impact on your nation.</span>
+                : changes.map(({key,delta})=>(
+                  <div key={key} style={{display:"flex",alignItems:"center",gap:4,background:delta>0?"#f0fdf4":"#fef2f2",border:`0.5px solid ${delta>0?"#86efac":"#fca5a5"}`,borderRadius:"var(--border-radius-md)",padding:"3px 9px"}}>
+                    <span style={{fontSize:11,color:"#333"}}>{key}</span>
+                    <span style={{fontSize:12,fontWeight:500,color:delta>0?"#16a34a":"#dc2626"}}>{delta>0?"+":""}{delta}</span>
+                  </div>
+                ))
+              }
+              {event.oilShock && (
+                <div style={{display:"flex",alignItems:"center",gap:4,background:"#fffbeb",border:"0.5px solid #fcd34d",borderRadius:"var(--border-radius-md)",padding:"3px 9px"}}>
+                  <span style={{fontSize:11}}>🛢️ Oil Shock Active</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{display:"flex",gap:8"}}>
+            <button onClick={onRespond} className="world-event-respond"
+              style={{flex:1,padding:"9px 14px",borderRadius:"var(--border-radius-md)",border:`0.5px solid ${sevColor}`,background:"var(--color-background-primary)",cursor:"pointer",fontSize:12,fontWeight:500,color:"var(--color-text-primary)",fontFamily:"var(--font-sans)",transition:"border-color 0.15s,background 0.15s",textAlign:"center"}}>
+              📋 Respond to this crisis
+            </button>
+            <button onClick={onDismiss}
+              style={{padding:"9px 14px",borderRadius:"var(--border-radius-md)",border:"0.5px solid var(--color-border-tertiary)",background:"transparent",cursor:"pointer",fontSize:12,color:"var(--color-text-secondary)",fontFamily:"var(--font-sans)"}}>
+              Continue without responding
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── NEWSPAPER COMPONENTS ──────────────────────────────────────────────────────
 
 function NewspaperPanel({ edition, country }) {
   const [tab,setTab]=useState(0);
@@ -262,18 +404,12 @@ function NewspaperPanel({ edition, country }) {
       </div>
       <div style={{padding:"12px 16px 14px"}}>
         <div style={{textAlign:"center",borderBottom:`1px solid ${outlet.accentColor}40`,paddingBottom:8,marginBottom:10}}>
-          <div style={{fontSize:9,color:"#999",fontFamily:"Georgia,serif",letterSpacing:"0.12em",marginBottom:4}}>
-            TURN {edition.turn} EDITION &nbsp;·&nbsp; {country.name.toUpperCase()} &nbsp;·&nbsp; SPECIAL REPORT
-          </div>
+          <div style={{fontSize:9,color:"#999",fontFamily:"Georgia,serif",letterSpacing:"0.12em",marginBottom:4}}>TURN {edition.turn} EDITION &nbsp;·&nbsp; {country.name.toUpperCase()}</div>
           <div style={{fontSize:18,fontWeight:700,fontFamily:"Georgia,serif",color:"#1a1a1a"}}>{outlet.name.toUpperCase()}</div>
         </div>
-        {paper.breakingTag&&(
-          <div style={{display:"inline-block",background:outlet.accentColor,color:"#fff",fontSize:8,padding:"2px 7px",fontFamily:"Georgia,serif",letterSpacing:"0.15em",marginBottom:8}}>▶ {paper.breakingTag}</div>
-        )}
+        {paper.breakingTag&&<div style={{display:"inline-block",background:outlet.accentColor,color:"#fff",fontSize:8,padding:"2px 7px",fontFamily:"Georgia,serif",letterSpacing:"0.15em",marginBottom:8}}>▶ {paper.breakingTag}</div>}
         <h2 style={{fontFamily:"Georgia,serif",fontSize:18,fontWeight:700,lineHeight:1.25,color:"#1a1a1a",margin:"0 0 6px"}}>{paper.headline}</h2>
-        {paper.subHeadline&&(
-          <p style={{fontFamily:"Georgia,serif",fontSize:11,fontStyle:"italic",color:"#444",lineHeight:1.55,margin:"0 0 10px",borderBottom:"1px solid #e0d8c8",paddingBottom:10}}>{paper.subHeadline}</p>
-        )}
+        {paper.subHeadline&&<p style={{fontFamily:"Georgia,serif",fontSize:11,fontStyle:"italic",color:"#444",lineHeight:1.55,margin:"0 0 10px",borderBottom:"1px solid #e0d8c8",paddingBottom:10}}>{paper.subHeadline}</p>}
         <div style={{display:"grid",gridTemplateColumns:paper.pullQuote?"1fr 130px":"1fr",gap:12,marginBottom:10}}>
           <p style={{fontFamily:"Georgia,serif",fontSize:12,lineHeight:1.7,color:"#222",margin:0}}>{paper.body}</p>
           {paper.pullQuote&&(
@@ -284,34 +420,28 @@ function NewspaperPanel({ edition, country }) {
           )}
         </div>
         {paper.secondaryStories?.length>0&&(
-          <>
-            <div style={{height:"0.5px",background:"#d0c8b0",margin:"10px 0"}}/>
-            <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(paper.secondaryStories.length,3)},1fr)`,gap:0}}>
-              {paper.secondaryStories.map((s,i)=>(
-                <div key={i} style={{padding:"6px 10px",borderRight:i<paper.secondaryStories.length-1?"0.5px solid #d0c8b0":"none"}}>
-                  <div style={{fontSize:8,color:outlet.accentColor,fontFamily:"Georgia,serif",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>{s.section}</div>
-                  <div style={{fontSize:11,fontWeight:700,fontFamily:"Georgia,serif",color:"#1a1a1a",lineHeight:1.3,marginBottom:3}}>{s.headline}</div>
-                  <div style={{fontSize:10,fontFamily:"Georgia,serif",color:"#555",lineHeight:1.5}}>{s.snippet}</div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-        {paper.opEd&&(
-          <>
-            <div style={{height:"0.5px",background:"#d0c8b0",margin:"10px 0"}}/>
-            <div style={{background:"#f0ece0",borderRadius:4,padding:"8px 12px",display:"flex",gap:10,alignItems:"flex-start"}}>
-              <div style={{width:30,height:30,borderRadius:"50%",background:outlet.accentColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{paper.opEd.authorIcon||"✍"}</div>
-              <div>
-                <div style={{fontSize:8,color:outlet.accentColor,fontFamily:"Georgia,serif",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:2}}>Opinion · {paper.opEd.author}</div>
-                <div style={{fontSize:11,fontWeight:700,fontFamily:"Georgia,serif",color:"#1a1a1a",marginBottom:3}}>{paper.opEd.title}</div>
-                <div style={{fontSize:10,fontFamily:"Georgia,serif",fontStyle:"italic",color:"#444",lineHeight:1.55}}>{paper.opEd.excerpt}</div>
+          <><div style={{height:"0.5px",background:"#d0c8b0",margin:"10px 0"}}/>
+          <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(paper.secondaryStories.length,3)},1fr)`,gap:0}}>
+            {paper.secondaryStories.map((s,i)=>(
+              <div key={i} style={{padding:"6px 10px",borderRight:i<paper.secondaryStories.length-1?"0.5px solid #d0c8b0":"none"}}>
+                <div style={{fontSize:8,color:outlet.accentColor,fontFamily:"Georgia,serif",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>{s.section}</div>
+                <div style={{fontSize:11,fontWeight:700,fontFamily:"Georgia,serif",color:"#1a1a1a",lineHeight:1.3,marginBottom:3}}>{s.headline}</div>
+                <div style={{fontSize:10,fontFamily:"Georgia,serif",color:"#555",lineHeight:1.5}}>{s.snippet}</div>
               </div>
+            ))}</div></>
+        )}
+        {paper.opEd&&(<><div style={{height:"0.5px",background:"#d0c8b0",margin:"10px 0"}}/>
+          <div style={{background:"#f0ece0",borderRadius:4,padding:"8px 12px",display:"flex",gap:10,alignItems:"flex-start"}}>
+            <div style={{width:30,height:30,borderRadius:"50%",background:outlet.accentColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{paper.opEd.authorIcon||"✍"}</div>
+            <div>
+              <div style={{fontSize:8,color:outlet.accentColor,fontFamily:"Georgia,serif",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:2}}>Opinion · {paper.opEd.author}</div>
+              <div style={{fontSize:11,fontWeight:700,fontFamily:"Georgia,serif",color:"#1a1a1a",marginBottom:3}}>{paper.opEd.title}</div>
+              <div style={{fontSize:10,fontFamily:"Georgia,serif",fontStyle:"italic",color:"#444",lineHeight:1.55}}>{paper.opEd.excerpt}</div>
             </div>
-          </>
+          </div></>
         )}
         {paper.ticker?.length>0&&(
-          <div style={{background:"#1c1c1c",margin:"12px -16px -14px",padding:"5px 12px",display:"flex",gap:0,overflow:"hidden"}}>
+          <div style={{background:"#1c1c1c",margin:"12px -16px -14px",padding:"5px 12px",display:"flex",overflow:"hidden"}}>
             <span style={{fontSize:8,color:outlet.accentColor,fontWeight:700,fontFamily:"Georgia,serif",letterSpacing:"0.1em",marginRight:10,flexShrink:0}}>TICKER</span>
             <span style={{fontSize:9,color:"#bbb",fontFamily:"Georgia,serif",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{paper.ticker.join("  ·  ")}</span>
           </div>
@@ -347,7 +477,7 @@ function CountrySelectScreen({ onSelect, apiKey, setApiKey, showApiInput, setSho
       <div style={{marginBottom:"1.5rem"}}>
         <div style={{fontSize:10,letterSpacing:"0.14em",color:"var(--color-text-tertiary)",fontFamily:"var(--font-mono)",marginBottom:6}}>GEOPOLITICS SIMULATOR</div>
         <h1 style={{fontSize:24,fontWeight:500,margin:"0 0 6px",letterSpacing:"-0.02em"}}>Choose your nation</h1>
-        <p style={{fontSize:13,color:"var(--color-text-secondary)",margin:0}}>Lead a country through real crises with real leaders. Every decision makes tomorrow's headlines.</p>
+        <p style={{fontSize:13,color:"var(--color-text-secondary)",margin:0}}>Lead a country through real crises with real leaders. The world won't wait for you.</p>
       </div>
       {showApiInput?(
         <div style={{background:"var(--color-background-secondary)",border:"0.5px solid var(--color-border-secondary)",borderRadius:"var(--border-radius-lg)",padding:"1rem",marginBottom:"1.25rem"}}>
@@ -382,9 +512,7 @@ function CountrySelectScreen({ onSelect, apiKey, setApiKey, showApiInput, setSho
               <div style={{fontSize:13,fontWeight:500,marginBottom:2,color:"var(--color-text-primary)"}}>{c.name}</div>
               <div style={{fontSize:10,color:"var(--color-text-tertiary)",fontFamily:"var(--font-mono)",marginBottom:6,letterSpacing:"0.06em"}}>{c.region}</div>
               {intel&&<div style={{fontSize:10,color:"var(--color-text-secondary)",lineHeight:1.4,marginBottom:6}}>{intel.leader}</div>}
-              <div style={{display:"inline-block",fontSize:9,padding:"2px 7px",borderRadius:99,background:`${POWER_COLORS[c.power]||"#94a3b8"}18`,color:POWER_COLORS[c.power]||"#94a3b8",border:`0.5px solid ${POWER_COLORS[c.power]||"#94a3b8"}40`,fontFamily:"var(--font-mono)"}}>
-                {c.power}
-              </div>
+              <div style={{display:"inline-block",fontSize:9,padding:"2px 7px",borderRadius:99,background:`${POWER_COLORS[c.power]||"#94a3b8"}18`,color:POWER_COLORS[c.power]||"#94a3b8",border:`0.5px solid ${POWER_COLORS[c.power]||"#94a3b8"}40`,fontFamily:"var(--font-mono)"}}>{c.power}</div>
             </button>
           );
         })}
@@ -451,7 +579,6 @@ export default function GeopoliticsSimulator() {
   const [gameState,setGameState]               = useState("choosing");
   const [reactionText,setReactionText]         = useState("");
   const [statDeltas,setStatDeltas]             = useState(null);
-  const [randomEvent,setRandomEvent]           = useState(null);
   const [pendingNext,setPendingNext]           = useState(null);
   const [loading,setLoading]                   = useState(false);
   const [newspaper,setNewspaper]               = useState(null);
@@ -462,7 +589,13 @@ export default function GeopoliticsSimulator() {
   const [showApiInput,setShowApiInput]         = useState(false);
   const [sideTab,setSideTab]                   = useState("alliances");
 
-  // Store last action + reaction for newspaper generation
+  // World Events state
+  const [activeWorldEvent,setActiveWorldEvent]         = useState(null);  // currently shown event
+  const [firedEventIds,setFiredEventIds]               = useState([]);    // events already used
+  const [statsBeforeEvent,setStatsBeforeEvent]         = useState(null);  // snapshot pre-event for delta display
+  const [worldEventLog,setWorldEventLog]               = useState([]);    // history of all fired events
+  const [respondingToEvent,setRespondingToEvent]       = useState(false); // user chose to respond
+
   const lastActionRef   = useRef("");
   const lastReactionRef = useRef("");
   const lastStatsRef    = useRef({});
@@ -482,11 +615,82 @@ export default function GeopoliticsSimulator() {
   }
 
   function buildCtx() {
+    const we = activeWorldEvent ? `\nActive world crisis: "${activeWorldEvent.title}" — ${activeWorldEvent.description}` : "";
     return `Country: ${country.name} (${country.power}, ${country.region})
 ${buildIntelBlock(country)}
 Alliances: ${getCountryAlliances(country).map(a=>a.name).join(", ")||"none"}
 Non-state threats: ${getCountryThreats(country).map(a=>a.name).join(", ")||"none"}
-Internal strife: ${strife}/100`;
+Internal strife: ${strife}/100${we}`;
+  }
+
+  // ── WORLD EVENT LOGIC ──
+
+  // Rolls for a world event. Called on Continue (after turn 2+, ~40% chance)
+  function rollWorldEvent(currentStats, currentStrife) {
+    if(Math.random() > 0.40) return; // 40% chance per turn
+    const event = pickWorldEvent(firedEventIds, country);
+    if(!event) return;
+
+    // Apply stat impacts
+    const impacts = applyWorldEvent(event, country, currentStats, currentStrife);
+    const newStats = {
+      Economy:        impacts.Economy,
+      Military:       impacts.Military,
+      Diplomacy:      impacts.Diplomacy,
+      Stability:      impacts.Stability,
+      GlobalPrestige: impacts.GlobalPrestige,
+    };
+    const newStrife = impacts.newStrife;
+
+    setStatsBeforeEvent({...currentStats});
+    setPrevStats({...currentStats});
+    setStats(newStats);
+    setStrife(newStrife);
+    setFiredEventIds(prev=>[...prev, event.id]);
+    setActiveWorldEvent(event);
+    setWorldEventLog(prev=>[...prev,{turn, event, statsImpact:{...newStats}}]);
+    setGameState("world_event");
+  }
+
+  function handleRespondToEvent() {
+    // Treat as an action turn: generate AI response actions specific to the world event
+    setRespondingToEvent(true);
+    setActiveWorldEvent(null);
+    setGameState("choosing_response");
+    // Generate response actions for the world event
+    generateEventResponseActions(activeWorldEvent);
+  }
+
+  async function generateEventResponseActions(event) {
+    setLoading(true);
+    try {
+      const prompt=`Geopolitical crisis simulation. A major world event has erupted and demands an immediate response.
+
+COUNTRY: ${country.name} (${country.power}) | LEADER: ${getIntel(country.id)?.leader||"the government"}
+ONGOING SCENARIO: ${scenario.title}
+WORLD CRISIS: "${event.title}" — ${event.description}
+CURRENT STATS: Eco ${stats.Economy} Mil ${stats.Military} Dip ${stats.Diplomacy} Sta ${stats.Stability}
+
+Describe how this specific world crisis is hitting ${country.name} RIGHT NOW — not in the abstract. Name actual domestic actors, specific economic sectors, or real border/trade relationships that are being disrupted. Then generate 4 response options.
+
+Each option must be CONCRETE and name specific actors, institutions, or policy tools available to ${country.name}. Include a clear tradeoff — who benefits, who is alienated.
+
+Return ONLY valid JSON:
+{"situation":"2-3 sentences: how is '${event.title}' specifically hitting ${country.name} today? Name the leader, name the specific impact — which sector is collapsing, which border is at risk, which ally is calling for help.","actions":[{"id":"a1","label":"5 word max label","description":"One concrete response sentence naming real actors and tradeoffs","statHints":{"Economy":3,"Military":0,"Diplomacy":5,"Stability":2,"GlobalPrestige":4}},{"id":"a2","label":"5 word max label","description":"One concrete sentence","statHints":{"Economy":5,"Military":2,"Diplomacy":-3,"Stability":4,"GlobalPrestige":1}},{"id":"a3","label":"5 word max label","description":"One concrete sentence","statHints":{"Economy":-3,"Military":5,"Diplomacy":-5,"Stability":-4,"GlobalPrestige":2}},{"id":"a4","label":"5 word max label","description":"One concrete sentence","statHints":{"Economy":-5,"Military":-2,"Diplomacy":8,"Stability":1,"GlobalPrestige":5}}]}`;
+      const raw=await callClaude(prompt,600);
+      const p=safeParseJSON(raw);
+      setSituation(p.situation);
+      setActions(p.actions);
+      setGameState("choosing");
+    } catch(e){ alert("Error: "+e.message); setGameState("choosing"); }
+    setLoading(false);
+  }
+
+  function handleDismissEvent() {
+    // Player ignores the event, just moves on
+    setActiveWorldEvent(null);
+    setGameState("choosing");
+    setRespondingToEvent(false);
   }
 
   // ── START GAME ──
@@ -501,9 +705,10 @@ Internal strife: ${strife}/100`;
       GlobalPrestige: clamp(c.power==="Superpower"?85:c.power==="Major Power"?70:c.power==="Regional Power"?55:35),
     };
     setStats(init); setPrevStats(null); setStrife(c.internalStrife);
-    setTurn(1); setLog([]); setReactionText(""); setRandomEvent(null);
+    setTurn(1); setLog([]); setReactionText(""); setPendingNext(null);
     setNewspaper(null); setAllEditions([]); setStatDeltas(null);
-    setGameState("choosing"); setPendingNext(null);
+    setGameState("choosing"); setActiveWorldEvent(null);
+    setFiredEventIds([]); setWorldEventLog([]); setRespondingToEvent(false);
     lastActionRef.current=""; lastReactionRef.current=""; lastStatsRef.current=init;
     const initRel={};
     ["usa","china","russia","india","germany","uk","iran","saudi_arabia"].forEach(id=>{
@@ -512,23 +717,24 @@ Internal strife: ${strife}/100`;
     });
     setRelationships(initRel);
     try {
-      const intel=buildIntelBlock(c);
       const allies=getCountryAlliances(c).map(a=>a.name).join(", ");
       const threats=getCountryThreats(c).map(a=>a.name).join(", ");
-      const prompt=`You are running a realistic geopolitical strategy simulation grounded in current real-world politics.
+      const prompt=`You are a geopolitical crisis simulation engine. Write like a veteran foreign policy journalist — vivid, specific, consequential.
 
-Country profile:
-- Nation: ${c.name} (${c.power}, ${c.region})
-- ${intel}
-- Alliances: ${allies||"none"}
-- Active threats: ${threats||"none"}
+COUNTRY: ${c.name} (${c.power}, ${c.region})
+${buildIntelBlock(c)}
+ALLIANCES: ${allies||"none"} | ACTIVE THREATS: ${threats||"none"}
+CRISIS: "${s.title}" — ${s.description}
 
-Crisis scenario: "${s.title}" — ${s.description}
+CRITICAL WRITING RULES:
+1. Name the actual leader of ${c.name} by name in the situation text
+2. Describe a CONCRETE OPENING EVENT — not a vague tension, but a specific incident that just happened (a military incursion, an assassination, a market crash, a specific vote, troops crossing a border, a missile launch)
+3. Name at least 2 specific rival countries or actors and what they are DOING RIGHT NOW, not what they might do
+4. The internal event must name a real political faction, opposition figure, or institution in ${c.name} and describe their SPECIFIC reaction
+5. Each action must be a concrete policy with a clear downside — not "engage diplomatically" but "offer bilateral talks with China, sidelining US alliance partners"
 
-Generate a situation briefing that is SPECIFIC to ${c.name}'s real political context. Reference the actual leader by name, name specific rival countries and real disputes, mention real ongoing tensions. Make it feel like a real intelligence briefing, not a generic description.
-
-Return ONLY a valid JSON object:
-{"situation":"3 sentences. Name the leader, name real rivals, reference actual disputes and real recent events specific to ${c.name}. Make it viscerally real.","internalEvent":"1 sentence about internal political pressure using real factions or political dynamics in ${c.name}.","actions":[{"id":"a1","label":"Short label","description":"One concrete tradeoff sentence referencing real actors","statHints":{"Economy":0,"Military":5,"Diplomacy":-5,"Stability":-3,"GlobalPrestige":2}},{"id":"a2","label":"Short label","description":"One concrete tradeoff sentence","statHints":{"Economy":-3,"Military":0,"Diplomacy":8,"Stability":2,"GlobalPrestige":5}},{"id":"a3","label":"Short label","description":"One concrete tradeoff sentence","statHints":{"Economy":5,"Military":-2,"Diplomacy":-3,"Stability":5,"GlobalPrestige":-2}},{"id":"a4","label":"Short label","description":"One concrete tradeoff sentence","statHints":{"Economy":-5,"Military":8,"Diplomacy":-8,"Stability":-5,"GlobalPrestige":-3}}]}`;
+Return ONLY valid JSON:
+{"situation":"3 sentences describing the SPECIFIC incident that just triggered this crisis, who is reacting how right now, and what the immediate stakes are for ${c.name}. Name the leader, name rivals, describe actual events not potential ones.","internalEvent":"1 sentence naming a specific real faction or institution in ${c.name} and their concrete reaction to this crisis.","actions":[{"id":"a1","label":"5 word max label","description":"One concrete sentence with a named tradeoff — e.g. which ally gains, which rival is antagonised","statHints":{"Economy":0,"Military":5,"Diplomacy":-5,"Stability":-3,"GlobalPrestige":2}},{"id":"a2","label":"5 word max label","description":"One concrete sentence with tradeoff","statHints":{"Economy":-3,"Military":0,"Diplomacy":8,"Stability":2,"GlobalPrestige":5}},{"id":"a3","label":"5 word max label","description":"One concrete sentence with tradeoff","statHints":{"Economy":5,"Military":-2,"Diplomacy":-3,"Stability":5,"GlobalPrestige":-2}},{"id":"a4","label":"5 word max label","description":"One concrete sentence with tradeoff","statHints":{"Economy":-5,"Military":8,"Diplomacy":-8,"Stability":-5,"GlobalPrestige":-3}}]}`;
       const raw=await callClaude(prompt,700);
       const p=safeParseJSON(raw);
       setSituation(p.situation+(p.internalEvent?" "+p.internalEvent:""));
@@ -543,33 +749,49 @@ Return ONLY a valid JSON object:
   async function handleAction(action) {
     setLoading(true);
     setGameState("reacting");
-    setReactionText("");
-    setNewspaper(null);
-    setNewspaperLoading(false);
-    setStatDeltas(null);
-    setRandomEvent(null);
-    lastActionRef.current=action.label;
+    setReactionText(""); setNewspaper(null); setNewspaperLoading(false);
+    setStatDeltas(null); lastActionRef.current=action.label;
+    setRespondingToEvent(false);
 
     const actorCtx=getRelatedActors(country).map(a=>a.name).join(", ");
     const allyCtx=getCountryAlliances(country).map(a=>a.name).join(", ");
+    const worldEventCtx=activeWorldEvent?`\nActive world crisis affecting this turn: "${activeWorldEvent.title}"`:"";
 
     try {
-      const prompt=`Geopolitical simulation — turn ${turn}.
-${buildCtx()}
-Scenario: ${scenario.title}. Current situation: ${situation}
-Player action: "${action.label}" — ${action.description}
-Current stats: Eco ${stats.Economy} Mil ${stats.Military} Dip ${stats.Diplomacy} Sta ${stats.Stability} Pre ${stats.GlobalPrestige} | Strife: ${strife}
-Alliances: ${allyCtx||"none"} | Nearby non-state actors: ${actorCtx||"none"}
-Recent decisions: ${log.slice(-2).map(l=>l.action).join(", ")||"none"}
+      // Build a narrative arc tracker so the AI knows where in the story we are
+      const turnPhase = turn <= 2 ? "OPENING — crisis is fresh, stakes are being established" 
+        : turn <= 4 ? "ESCALATION — consequences of early decisions are materialising, new actors entering" 
+        : turn <= 6 ? "CRISIS PEAK — situation is at its most dangerous/complex, major decisions needed"
+        : "RESOLUTION — crisis is moving toward an endgame, player's legacy is being written";
+      const historyCtx = log.length > 0 
+        ? "PREVIOUS TURNS:\n" + log.map(l=>`T${l.turn}: Player did "${l.action}" → ${l.reaction.slice(0,120)}`).join("\n")
+        : "FIRST TURN";
 
-Simulate the world's reaction with SPECIFIC REAL-WORLD grounding:
-- Name actual world leaders by name in their reactions (Putin, Xi Jinping, Modi, Erdoğan, MBS, etc.)
-- Reference real ongoing disputes, alliances, and tensions
-- Make consequences feel like real geopolitics, not a board game
+      const prompt=`You are a geopolitical crisis simulation engine. Write like a veteran war correspondent reporting from the field — specific events, named people, concrete consequences. NEVER write press releases or diplomatic statements.
 
-Return ONLY a valid JSON object (no markdown, no + signs before numbers):
-{"worldReaction":"2-3 sentences. Name actual leaders and countries. Reference real disputes and alliances. Specific and dramatic.","internalConsequence":"1 sentence of internal political consequence naming real factions or political dynamics.","nonStateActorEvent":null,"randomEvent":null,"newSituation":"2-3 sentences for next turn, grounded in real geopolitical context.","newActions":[{"id":"a1","label":"Label","description":"One concrete sentence"},{"id":"a2","label":"Label","description":"One concrete sentence"},{"id":"a3","label":"Label","description":"One concrete sentence"},{"id":"a4","label":"Label","description":"One concrete sentence"}],"statChanges":{"Economy":0,"Military":0,"Diplomacy":0,"Stability":0,"GlobalPrestige":0},"strifeChange":0,"relationshipChanges":{"usa":0,"china":0,"russia":0},"gameOver":false,"gameOverReason":null}
-Numbers must be plain integers with no + sign. statChanges: -15 to 15. strifeChange: -10 to 15. Set gameOver true if any stat hits 5 or 95, or strife reaches 90.`;
+COUNTRY: ${country.name} (${country.power}, ${country.region})
+${buildIntelBlock(country)}
+ALLIANCES: ${allyCtx||"none"} | NEARBY THREATS: ${actorCtx||"none"}
+STRIFE: ${strife}/100 | STATS: Eco ${stats.Economy} Mil ${stats.Military} Dip ${stats.Diplomacy} Sta ${stats.Stability} Pre ${stats.GlobalPrestige}
+
+SCENARIO: ${scenario.title}
+CURRENT SITUATION: ${situation}
+PLAYER JUST DID: "${action.label}" — ${action.description}
+NARRATIVE PHASE: ${turnPhase}
+${historyCtx}
+${worldEventCtx}
+
+CRITICAL RULES — READ THESE BEFORE WRITING:
+1. "worldReaction" must describe CONCRETE EVENTS THAT HAPPEN as a result — troop movements, market crashes, emergency sessions, border closures, arrests, missile launches, sanctions imposed, allies defecting, coups attempted. NOT quotes from leaders. NOT diplomatic statements. EVENTS.
+2. Each turn must ADVANCE THE PLOT meaningfully. The situation must be NOTICEABLY DIFFERENT from last turn. If the player did diplomacy last turn, this turn China has either agreed to a deal with conditions OR walked away OR a third party has intervened. Never just "tensions continue."
+3. "internalConsequence" must describe something HAPPENING INSIDE ${country.name} — a general resigning, parliament voting, protests breaking out, a faction making a move, an ally calling an emergency meeting
+4. "newSituation" MUST introduce a NEW development that didn't exist before — a new actor entering, a deadline being set, a secret revealed, an unexpected alliance forming, a crisis escalating in a new dimension. The next turn's options should feel completely different from this turn's.
+5. If the player has been doing the same type of action repeatedly (check history), make the world react with FATIGUE or DIMINISHING RETURNS — allies get frustrated, rivals get bolder, domestic pressure mounts
+6. Name specific leaders by name when describing their actions (Putin ordered X, Xi Jinping's State Council voted Y, Modi convened the Cabinet Committee on Security)
+
+Return ONLY valid JSON (no markdown, no + signs before numbers):
+{"worldReaction":"2-3 sentences of CONCRETE EVENTS that happened — what moved, who acted, what changed on the ground. No diplomatic statements. Name leaders doing things, not saying things.","internalConsequence":"1 sentence: something HAPPENING inside ${country.name} with a named actor — a resignation, a vote, protests, a faction making a move.","nonStateActorEvent":null,"newSituation":"2-3 sentences introducing a GENUINELY NEW development for next turn. Must name a new element that wasn't in the current situation. The player should face a meaningfully different landscape.","newActions":[{"id":"a1","label":"5 word max label","description":"Concrete sentence with named tradeoff"},{"id":"a2","label":"5 word max label","description":"Concrete sentence with named tradeoff"},{"id":"a3","label":"5 word max label","description":"Concrete sentence with named tradeoff"},{"id":"a4","label":"5 word max label","description":"Concrete sentence with named tradeoff"}],"statChanges":{"Economy":0,"Military":0,"Diplomacy":0,"Stability":0,"GlobalPrestige":0},"strifeChange":0,"relationshipChanges":{"usa":0,"china":0,"russia":0},"gameOver":false,"gameOverReason":null}
+NUMBERS: plain integers only. statChanges -15 to 15. strifeChange -10 to 15. Make stat changes MEANINGFUL — diplomatic success should actually move Diplomacy +8 to +12, not +2. A military disaster should hit Stability -10, not -2. gameOver if stat hits 5/95 or strife 90.`;
 
       const raw=await callClaude(prompt,750);
       const p=safeParseJSON(raw);
@@ -593,59 +815,63 @@ Numbers must be plain integers with no + sign. statChanges: -15 to 15. strifeCha
       setRelationships(newRel);
       setReactionText(fullText);
       setStatDeltas(snapshot);
-      if(p.randomEvent) setRandomEvent(p.randomEvent);
       setLog(prev=>[...prev,{turn,action:action.label,reaction:p.worldReaction,strife:newStrife}]);
 
       if(p.gameOver){
         setPendingNext({gameOver:true,reason:p.gameOverReason});
       } else {
-        setPendingNext({situation:p.newSituation,actions:p.newActions});
+        setPendingNext({situation:p.newSituation,actions:p.newActions,statsForEvent:newStats,strifeForEvent:newStrife});
       }
     } catch(e){alert("Error: "+e.message);setGameState("choosing");}
     setLoading(false);
   }
 
-  // ── GENERATE NEWSPAPER (on demand, uses slightly better model for layout quality) ──
+  // ── GENERATE NEWSPAPER ──
+
+  // Generate one paper per call to avoid truncation, run all 3 in parallel
+  async function generateOnePaper(outletId, bias, instruction, ctx) {
+    const prompt=`You are writing a single fictional newspaper front page for a geopolitical strategy game. Respond with ONLY a JSON object — no preamble, no explanation, nothing outside the JSON.
+
+CONTEXT: ${ctx}
+OUTLET BIAS: ${bias}
+WRITING INSTRUCTION: ${instruction}
+
+Return this EXACT JSON structure (fill in all fields, keep values short):
+{"outletId":"${outletId}","breakingTag":"BREAKING","headline":"Max 10 words","subHeadline":"One sentence deck.","body":"2 sentences. Name actual leaders and events.","pullQuote":{"text":"Under 10 words","attribution":"Name, Title"},"secondaryStories":[{"section":"WORLD","headline":"Short headline","snippet":"One sentence."},{"section":"ECONOMY","headline":"Short headline","snippet":"One sentence."}],"opEd":{"author":"Analyst Name","authorIcon":"✍","title":"Op-ed title","excerpt":"2 short sentences."},"ticker":["Short item 1","Short item 2","Short item 3"]}`;
+    const raw = await callClaude(prompt, 500, "anthropic/claude-3.5-haiku");
+    return safeParseJSON(raw);
+  }
 
   async function handleGenerateNewspaper() {
     if(newspaperLoading||newspaper) return;
     setNewspaperLoading(true);
     try {
-      const allies=getCountryAlliances(country).map(a=>a.name).join(", ");
       const intel=getIntel(country.id);
-      const leaderName=intel?.leader||"the government";
-      const rivals=intel?.keyRivals||"rival states";
+      const allies=getCountryAlliances(country).map(a=>a.name).join(", ");
+      const worldCtx=worldEventLog.length>0?` World crisis: ${worldEventLog.slice(-1)[0]?.event.title}.`:"";
+      const ctx=`Country: ${country.name}, Leader: ${intel?.leader||"the government"}, Scenario: ${scenario.title}, Decision: "${lastActionRef.current}", Reaction: ${lastReactionRef.current.slice(0,200)}, Alliances: ${allies||"none"}.${worldCtx}`;
 
-      const prompt=`You are writing fictional newspaper front pages for a geopolitical strategy game. Ground everything in real geopolitics.
+      // Generate 3 papers in parallel — each is a separate small call, much less likely to truncate
+      const [p1,p2,p3] = await Promise.allSettled([
+        generateOnePaper("herald",  "Western liberal broadsheet", "Write from a critical Western perspective. Emphasise democracy, rule of law, or human rights angle. Be pointed and direct.", ctx),
+        generateOnePaper("global_t","Eastern state media",        "Write from a pro-sovereignty, multipolar perspective. Emphasise Western hypocrisy or the right of nations to self-determination. Favour Xi Jinping or Russia's framing.", ctx),
+        generateOnePaper("al_watan","Gulf/Global South regional", "Write from a regional or Global South perspective. Emphasise humanitarian impact, sovereignty, or consequences for developing nations.", ctx),
+      ]);
 
-Game context:
-- Country: ${country.name} | Leader: ${leaderName}
-- Scenario: ${scenario.title}
-- Player's decision this turn: "${lastActionRef.current}"
-- World reaction: ${lastReactionRef.current}
-- Turn: ${turn}
-- Key rivals: ${rivals} | Alliances: ${allies||"none"}
-- Stats after this turn: Economy ${lastStatsRef.current.Economy||stats.Economy}, Military ${lastStatsRef.current.Military||stats.Military}, Diplomacy ${lastStatsRef.current.Diplomacy||stats.Diplomacy}
+      const papers = [p1,p2,p3]
+        .filter(r=>r.status==="fulfilled")
+        .map(r=>r.value);
 
-Generate 3 newspaper front pages. Each must cover the SAME events but with completely different editorial bias. Name real leaders and reference real geopolitical dynamics.
+      if(papers.length===0) throw new Error("All 3 newspaper calls failed");
 
-Return ONLY a valid JSON object:
-{"papers":[
-{"outletId":"herald","breakingTag":"BREAKING","headline":"Western liberal headline max 12 words naming ${country.name}'s leader","subHeadline":"One sentence deck","body":"2-3 sentences. Name actual leaders, reference real alliances/disputes. Write like a real journalist.","pullQuote":{"text":"Quote under 12 words from a Western official or analyst","attribution":"Name, Title, Country"},"secondaryStories":[{"section":"WORLD","headline":"Related world story headline","snippet":"One sentence."},{"section":"ECONOMY","headline":"Economic angle","snippet":"One sentence."}],"opEd":{"author":"Western analyst name","authorIcon":"🎓","title":"Op-ed title","excerpt":"2 sentences of pointed Western commentary on this decision."},"ticker":["Breaking item 1","Breaking item 2","Breaking item 3"]},
-{"outletId":"global_t","breakingTag":"EXCLUSIVE","headline":"State media headline - same events, pro-sovereignty framing max 12 words","subHeadline":"One sentence","body":"2-3 sentences. Emphasise sovereignty, Western hypocrisy, or multipolar order. Name Xi Jinping or relevant Eastern leaders.","pullQuote":{"text":"Quote under 12 words","attribution":"Name, Title"},"secondaryStories":[{"section":"GEOPOLITICS","headline":"Headline","snippet":"One sentence."},{"section":"TRADE","headline":"Headline","snippet":"One sentence."}],"opEd":{"author":"State analyst name","authorIcon":"🌏","title":"Title","excerpt":"2 sentences praising multipolarity or criticising Western interference."},"ticker":["Item 1","Item 2","Item 3"]},
-{"outletId":"al_watan","breakingTag":"URGENT","headline":"Regional/Global South headline - humanitarian or sovereignty angle max 12 words","subHeadline":"One sentence","body":"2-3 sentences. Focus on regional impact, affected populations, or Global South perspective.","pullQuote":{"text":"Quote under 12 words","attribution":"Name, Title"},"secondaryStories":[{"section":"REGIONAL","headline":"Headline","snippet":"One sentence."},{"section":"HUMANITARIAN","headline":"Headline","snippet":"One sentence."}],"opEd":{"author":"Regional analyst name","authorIcon":"🌍","title":"Title","excerpt":"2 sentences on consequences for the region or Global South."},"ticker":["Item 1","Item 2","Item 3"]}
-]}`;
-
-      // Use a slightly better model for newspaper to ensure clean JSON structure
-      const raw=await callClaude(prompt,900,"anthropic/claude-3.5-haiku");
-      const parsed=safeParseJSON(raw);
-      const edition={...parsed,turn};
+      const edition={papers, turn};
       setNewspaper(edition);
       setAllEditions(prev=>[...prev,edition]);
     } catch(e){
       console.error("Newspaper error:",e);
-      // Show a fallback so user knows something went wrong
-      alert("Press generation failed: "+e.message+"\nTry again.");
+      // Show a minimal fallback paper so the UI doesn't break
+      const fallback={papers:[{outletId:"herald",breakingTag:"BREAKING",headline:"Press unavailable — try again",subHeadline:"An error occurred generating press coverage.",body:"The press bureau is temporarily unavailable. Your decision has been recorded.",pullQuote:null,secondaryStories:[],opEd:null,ticker:["Press generation failed","Click to retry"]}],turn};
+      setNewspaper(fallback);
     }
     setNewspaperLoading(false);
   }
@@ -658,18 +884,26 @@ Return ONLY a valid JSON object:
       setSituation(pendingNext.reason);
       setActions([]);
       setPhase("result");
-    } else {
-      setSituation(pendingNext.situation);
-      setActions(pendingNext.actions);
-      setTurn(t=>t+1);
-      setGameState("choosing");
-      setReactionText(""); setStatDeltas(null);
-      setRandomEvent(null); setNewspaper(null);
-      setNewspaperLoading(false); setPendingNext(null);
+      return;
+    }
+    // Advance turn
+    setSituation(pendingNext.situation);
+    setActions(pendingNext.actions);
+    setTurn(t=>t+1);
+    setGameState("choosing");
+    setReactionText(""); setStatDeltas(null);
+    setNewspaper(null); setNewspaperLoading(false);
+    setPendingNext(null); setActiveWorldEvent(null);
+
+    // Roll for a world event on turns 2+ (after a short delay so state settles)
+    if(turn >= 1) {
+      setTimeout(()=>{
+        rollWorldEvent(pendingNext.statsForEvent||stats, pendingNext.strifeForEvent||strife);
+      }, 300);
     }
   }
 
-  // ── SCREENS ──
+  // ── PLAYING SCREEN ──
 
   if(phase==="select_country") return (
     <CountrySelectScreen onSelect={c=>{setCountry(c);setPhase("select_scenario");}} apiKey={apiKey} setApiKey={setApiKey} showApiInput={showApiInput} setShowApiInput={setShowApiInput}/>
@@ -677,8 +911,6 @@ Return ONLY a valid JSON object:
   if(phase==="select_scenario") return (
     <ScenarioSelectScreen country={country} onSelect={s=>{setScenario(s);startGame(country,s);}} onBack={()=>setPhase("select_country")} loading={loading}/>
   );
-
-  // ── PLAYING ──
 
   if(phase==="playing") return (
     <div style={{fontFamily:"var(--font-sans)",maxWidth:980,margin:"0 auto",padding:"1.25rem 1rem"}}>
@@ -694,6 +926,11 @@ Return ONLY a valid JSON object:
           </div>
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          {worldEventLog.length>0&&(
+            <div style={{fontSize:10,fontFamily:"var(--font-mono)",color:"#f59e0b",background:"#fffbeb",padding:"4px 10px",borderRadius:99,border:"0.5px solid #fcd34d"}}>
+              🌐 {worldEventLog.length} world crisis{worldEventLog.length!==1?"es":""}
+            </div>
+          )}
           <div style={{fontSize:10,fontFamily:"var(--font-mono)",color:"var(--color-text-tertiary)",background:"var(--color-background-secondary)",padding:"4px 10px",borderRadius:99,border:"0.5px solid var(--color-border-tertiary)"}}>TURN {turn}</div>
           <div style={{fontSize:10,fontFamily:"var(--font-mono)",color:strife>60?"#ef4444":strife>35?"#f59e0b":"#22c55e",background:"var(--color-background-secondary)",padding:"4px 10px",borderRadius:99,border:"0.5px solid var(--color-border-tertiary)"}}>STRIFE {strife}</div>
           <button onClick={()=>setPhase("select_scenario")} style={{fontSize:10,padding:"4px 10px",borderRadius:99,border:"0.5px solid var(--color-border-tertiary)",background:"none",cursor:"pointer",color:"var(--color-text-tertiary)"}}>↩ New Scenario</button>
@@ -705,22 +942,28 @@ Return ONLY a valid JSON object:
         {/* LEFT */}
         <div>
 
-          {/* SITUATION */}
-          <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:"var(--border-radius-lg)",padding:"1rem 1.25rem",marginBottom:12}}>
-            <SectionLabel>Situation Report — Turn {turn}</SectionLabel>
-            <p style={{fontSize:14,lineHeight:1.8,margin:0,color:"var(--color-text-primary)"}}>{situation}</p>
-          </div>
+          {/* WORLD EVENT CARD — interrupts normal flow */}
+          {activeWorldEvent && statsBeforeEvent && (
+            <WorldEventCard
+              event={activeWorldEvent}
+              country={country}
+              impactedStats={stats}
+              prevStatsBeforeEvent={statsBeforeEvent}
+              onRespond={handleRespondToEvent}
+              onDismiss={handleDismissEvent}
+            />
+          )}
 
-          {/* SHOCK EVENT */}
-          {randomEvent&&(
-            <div style={{background:"#fef2f2",border:"0.5px solid #fca5a5",borderLeft:"3px solid #ef4444",borderRadius:"var(--border-radius-md)",padding:"10px 14px",marginBottom:12,animation:"fadeUp 0.3s ease"}}>
-              <div style={{fontSize:10,fontFamily:"var(--font-mono)",color:"#ef4444",letterSpacing:"0.1em",marginBottom:4}}>⚡ SHOCK EVENT — {randomEvent.title.toUpperCase()}</div>
-              <p style={{fontSize:13,color:"#7f1d1d",lineHeight:1.6,margin:0}}>{randomEvent.description}</p>
+          {/* SITUATION */}
+          {!activeWorldEvent && (
+            <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:"var(--border-radius-lg)",padding:"1rem 1.25rem",marginBottom:12}}>
+              <SectionLabel>Situation Report — Turn {turn}{respondingToEvent?" · Responding to World Crisis":""}</SectionLabel>
+              <p style={{fontSize:14,lineHeight:1.8,margin:0,color:"var(--color-text-primary)"}}>{situation}</p>
             </div>
           )}
 
           {/* WORLD REACTION */}
-          {reactionText&&(
+          {reactionText&&!activeWorldEvent&&(
             <div style={{background:"var(--color-background-secondary)",border:"0.5px solid var(--color-border-tertiary)",borderLeft:"3px solid var(--color-border-secondary)",borderRadius:"var(--border-radius-lg)",padding:"1rem 1.25rem",marginBottom:12,animation:"fadeUp 0.3s ease"}}>
               <SectionLabel>🌐 World Reaction</SectionLabel>
               <p style={{fontSize:14,lineHeight:1.8,margin:0,whiteSpace:"pre-wrap",color:"var(--color-text-primary)"}}>
@@ -730,14 +973,14 @@ Return ONLY a valid JSON object:
           )}
 
           {/* STAT DELTAS */}
-          {reactionText&&statDeltas&&(
+          {reactionText&&statDeltas&&!activeWorldEvent&&(
             <div style={{marginBottom:12}}>
               <StatDeltaPanel stats={stats} prevStats={statDeltas}/>
             </div>
           )}
 
-          {/* NEWSPAPER — on demand */}
-          {reactionText&&(
+          {/* NEWSPAPER */}
+          {reactionText&&!activeWorldEvent&&(
             <div style={{marginBottom:12}}>
               {!newspaper&&!newspaperLoading&&(
                 <button onClick={handleGenerateNewspaper} className="press-btn"
@@ -751,7 +994,7 @@ Return ONLY a valid JSON object:
           )}
 
           {/* CONTINUE */}
-          {reactionText&&pendingNext&&!loading&&(
+          {reactionText&&pendingNext&&!loading&&!activeWorldEvent&&(
             <div style={{marginBottom:12,animation:"fadeUp 0.4s ease 0.2s both"}}>
               <button onClick={handleContinue} className="cont-btn"
                 style={{width:"100%",padding:"13px",borderRadius:"var(--border-radius-lg)",border:"0.5px solid var(--color-border-primary)",background:"var(--color-background-primary)",cursor:"pointer",fontSize:13,fontWeight:500,color:"var(--color-text-primary)",fontFamily:"var(--font-sans)",transition:"background 0.15s"}}>
@@ -761,9 +1004,9 @@ Return ONLY a valid JSON object:
           )}
 
           {/* ACTIONS */}
-          {gameState==="choosing"&&actions.length>0&&!loading&&(
+          {(gameState==="choosing"||gameState==="choosing_response")&&actions.length>0&&!loading&&!activeWorldEvent&&(
             <div style={{animation:"fadeUp 0.3s ease"}}>
-              <Divider label="YOUR MOVE"/>
+              <Divider label={respondingToEvent?"CRISIS RESPONSE OPTIONS":"YOUR MOVE"}/>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                 {actions.map((a,i)=>(
                   <button key={a.id} onClick={()=>handleAction(a)} className="action-btn"
@@ -787,8 +1030,8 @@ Return ONLY a valid JSON object:
             <div style={{textAlign:"center",padding:"2rem 0",color:"var(--color-text-secondary)",fontSize:13}}>⚙️ Simulating consequences...</div>
           )}
 
-          {/* LOG */}
-          {log.length>0&&gameState==="choosing"&&(
+          {/* DECISION LOG */}
+          {log.length>0&&(gameState==="choosing"||gameState==="choosing_response")&&!loading&&!activeWorldEvent&&(
             <div style={{marginTop:4}}>
               <Divider label="DECISION LOG"/>
               {log.slice().reverse().map((e,i)=>(
@@ -804,6 +1047,7 @@ Return ONLY a valid JSON object:
 
         {/* SIDEBAR */}
         <div style={{position:"sticky",top:"1rem"}}>
+          {/* Stats */}
           <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:"var(--border-radius-lg)",padding:"1rem",marginBottom:10}}>
             <SectionLabel>National Stats</SectionLabel>
             {STAT_KEYS.map(k=><StatBar key={k} label={k} value={stats[k]} prev={prevStats?.[k]}/>)}
@@ -818,6 +1062,20 @@ Return ONLY a valid JSON object:
             </div>
           </div>
 
+          {/* World event log in sidebar */}
+          {worldEventLog.length>0&&(
+            <div style={{background:"var(--color-background-primary)",border:"0.5px solid #fcd34d",borderRadius:"var(--border-radius-lg)",padding:"10px 12px",marginBottom:10}}>
+              <SectionLabel>🌐 World Crises</SectionLabel>
+              {worldEventLog.map((entry,i)=>(
+                <div key={i} style={{marginBottom:7,paddingLeft:8,borderLeft:`2px solid ${SEV_COLOR[entry.event.severity]||"#888"}`}}>
+                  <div style={{fontSize:9,color:SEV_COLOR[entry.event.severity],fontFamily:"var(--font-mono)",marginBottom:2}}>T{entry.turn} · {entry.event.severity.toUpperCase()}</div>
+                  <div style={{fontSize:11,color:"var(--color-text-primary)",fontWeight:500}}>{entry.event.icon} {entry.event.title}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Info tabs */}
           <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:"var(--border-radius-lg)",overflow:"hidden",marginBottom:10}}>
             <div style={{display:"flex",borderBottom:"0.5px solid var(--color-border-tertiary)"}}>
               {["alliances","threats","diplo"].map(t=>(
@@ -838,37 +1096,34 @@ Return ONLY a valid JSON object:
                     </div>
                   ))
               )}
-              {sideTab==="threats"&&(
-                Object.entries(NON_STATE_ACTORS).map(([k,a])=>{
-                  const rel=a.regions.some(r=>r===country.id||country.region.toLowerCase().includes(r))||country.threats.includes(k);
-                  return rel?(
-                    <div key={k} style={{marginBottom:8,display:"flex",gap:6,alignItems:"flex-start"}}>
-                      <span style={{fontSize:14}}>{a.icon}</span>
-                      <div>
-                        <div style={{fontSize:11,fontWeight:500}}>{a.name}</div>
-                        <div style={{fontSize:10,color:"var(--color-text-secondary)"}}>{a.ideology}</div>
-                      </div>
+              {sideTab==="threats"&&Object.entries(NON_STATE_ACTORS).map(([k,a])=>{
+                const rel=a.regions.some(r=>r===country.id||country.region.toLowerCase().includes(r))||country.threats.includes(k);
+                return rel?(
+                  <div key={k} style={{marginBottom:8,display:"flex",gap:6,alignItems:"flex-start"}}>
+                    <span style={{fontSize:14}}>{a.icon}</span>
+                    <div>
+                      <div style={{fontSize:11,fontWeight:500}}>{a.name}</div>
+                      <div style={{fontSize:10,color:"var(--color-text-secondary)"}}>{a.ideology}</div>
                     </div>
-                  ):null;
-                })
-              )}
-              {sideTab==="diplo"&&(
-                Object.entries(relationships).map(([id,score])=>{
-                  const c2=COUNTRIES.find(x=>x.id===id); if(!c2) return null;
-                  return (
-                    <div key={id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
-                      <span style={{fontSize:14}}>{c2.flag}</span>
-                      <div style={{flex:1,height:4,background:"var(--color-background-tertiary)",borderRadius:2}}>
-                        <div style={{height:"100%",width:`${score}%`,background:score>60?"#22c55e":score>35?"#f59e0b":"#ef4444",borderRadius:2,transition:"width 0.5s"}}/>
-                      </div>
-                      <span style={{fontSize:10,fontFamily:"var(--font-mono)",color:"var(--color-text-secondary)",minWidth:20,textAlign:"right"}}>{score}</span>
+                  </div>
+                ):null;
+              })}
+              {sideTab==="diplo"&&Object.entries(relationships).map(([id,score])=>{
+                const c2=COUNTRIES.find(x=>x.id===id); if(!c2) return null;
+                return (
+                  <div key={id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
+                    <span style={{fontSize:14}}>{c2.flag}</span>
+                    <div style={{flex:1,height:4,background:"var(--color-background-tertiary)",borderRadius:2}}>
+                      <div style={{height:"100%",width:`${score}%`,background:score>60?"#22c55e":score>35?"#f59e0b":"#ef4444",borderRadius:2,transition:"width 0.5s"}}/>
                     </div>
-                  );
-                })
-              )}
+                    <span style={{fontSize:10,fontFamily:"var(--font-mono)",color:"var(--color-text-secondary)",minWidth:20,textAlign:"right"}}>{score}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
+          {/* Press archive */}
           {allEditions.length>0&&(
             <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:"var(--border-radius-lg)",padding:"10px 12px"}}>
               <SectionLabel>Press Archive</SectionLabel>
@@ -908,6 +1163,23 @@ Return ONLY a valid JSON object:
         <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,marginBottom:"1.25rem"}}>
           {STAT_KEYS.map(k=><StatPill key={k} label={k} value={stats[k]}/>)}
         </div>
+
+        {/* World crisis summary */}
+        {worldEventLog.length>0&&(
+          <>
+            <Divider label="WORLD CRISES DURING YOUR TENURE"/>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8,marginBottom:"1.25rem"}}>
+              {worldEventLog.map((entry,i)=>(
+                <div key={i} style={{padding:"10px 12px",borderRadius:"var(--border-radius-md)",border:`0.5px solid ${SEV_COLOR[entry.event.severity]}40`,borderLeft:`3px solid ${SEV_COLOR[entry.event.severity]}`,background:SEV_BG[entry.event.severity]}}>
+                  <div style={{fontSize:9,color:SEV_COLOR[entry.event.severity],fontFamily:"var(--font-mono)",marginBottom:4}}>T{entry.turn} · {entry.event.severity.toUpperCase()}</div>
+                  <div style={{fontSize:12,fontWeight:500,color:"#1a1a1a"}}>{entry.event.icon} {entry.event.title}</div>
+                  <div style={{fontSize:10,color:"#555",lineHeight:1.4,marginTop:3}}>{entry.event.description.slice(0,80)}...</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
         {allEditions.length>0&&(
           <>
             <Divider label="YOUR TENURE IN THE WORLD PRESS"/>
@@ -924,6 +1196,7 @@ Return ONLY a valid JSON object:
             </div>
           </>
         )}
+
         <div style={{display:"flex",gap:10,justifyContent:"center"}}>
           <button onClick={()=>{setPhase("select_country");setCountry(null);setScenario(null);}}
             style={{fontSize:13,padding:"10px 24px",borderRadius:"var(--border-radius-md)",border:"0.5px solid var(--color-border-secondary)",background:"var(--color-background-primary)",cursor:"pointer",fontFamily:"var(--font-sans)"}}>
