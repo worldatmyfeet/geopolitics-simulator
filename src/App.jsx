@@ -626,11 +626,25 @@ export default function GeopoliticsSimulator() {
   async function callClaude(prompt, maxTokens=700, model=null) {
     const useModel = model || selectedModel;
     const key=apiKey||window.__GEO_KEY__||localStorage.getItem("geo_api_key")||"";
-    const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":`Bearer ${key}`,"X-Title":"Geopolitics Simulator","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:useModel,max_tokens:maxTokens,messages:[{role:"user",content:prompt}]}),
-    });
+    if(!key) throw new Error("No API key set. Please enter your OpenRouter key first.");
+    let res;
+    try {
+      res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
+        method:"POST",
+        mode:"cors",
+        headers:{
+          "Content-Type":"application/json",
+          "Authorization":`Bearer ${key}`,
+        },
+        body:JSON.stringify({model:useModel,max_tokens:maxTokens,messages:[{role:"user",content:prompt}]}),
+      });
+    } catch(networkErr) {
+      throw new Error("Network error — check your internet connection and that your API key is saved.");
+    }
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      throw new Error(err?.error?.message||`API error: HTTP ${res.status}`);
+    }
     const data=await res.json();
     if(data.error) throw new Error(data.error.message);
     return data.choices[0].message.content;
