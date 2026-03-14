@@ -554,7 +554,7 @@ function ScenarioSelectScreen({ country, onSelect, onBack, loading }) {
           <div style={{fontSize:10,color:"var(--color-text-tertiary)",fontFamily:"var(--font-mono)",letterSpacing:"0.1em",marginBottom:3}}>PLAYING AS</div>
           <div style={{fontSize:18,fontWeight:500,color:"var(--color-text-primary)",marginBottom:4}}>{country.name}</div>
           {intel&&(
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"3px 16px"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",rowGap:3,columnGap:16}}>
               <div style={{fontSize:11,color:"var(--color-text-secondary)"}}><span style={{color:"var(--color-text-tertiary)"}}>Leader:</span> {intel.leader}</div>
               <div style={{fontSize:11,color:"var(--color-text-secondary)"}}><span style={{color:"var(--color-text-tertiary)"}}>Rivals:</span> {intel.keyRivals}</div>
               <div style={{fontSize:11,color:"var(--color-text-secondary)",gridColumn:"1/-1"}}><span style={{color:"var(--color-text-tertiary)"}}>Live issues:</span> {intel.hotIssues}</div>
