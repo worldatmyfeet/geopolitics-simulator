@@ -515,7 +515,7 @@ Stats: ${JSON.stringify(stats)} | Strife: ${strife}/100
 Alliances: ${allyCtx||"none"} | Non-state actors: ${actorCtx||"none"}
 Recent: ${log.slice(-2).map(l=>l.action).join(", ")||"none"}
 Return ONLY valid JSON:
-{"worldReaction":"3-5 sentences naming specific countries and actors. Dramatic and realistic.","internalConsequence":"1-2 sentences of internal political consequence.","nonStateActorEvent":null,"randomEvent":null,"newSituation":"2-3 sentences for next turn.","newActions":[{"id":"a1","label":"Label","description":"One sentence"},{"id":"a2","label":"Label","description":"One sentence"},{"id":"a3","label":"Label","description":"One sentence"},{"id":"a4","label":"Label","description":"One sentence"}],"statChanges":{"Economy":0,"Military":0,"Diplomacy":0,"Stability":0,"GlobalPrestige":0},"strifeChange":0,"relationshipChanges":{"usa":0,"china":0,"russia":0},"gameOver":false,"gameOverReason":null}
+{"worldReaction":"2-3 sentences naming specific countries and actors. Dramatic and realistic.","internalConsequence":"1-2 sentences of internal political consequence.","nonStateActorEvent":null,"randomEvent":null,"newSituation":"2-3 sentences for next turn.","newActions":[{"id":"a1","label":"Label","description":"One sentence"},{"id":"a2","label":"Label","description":"One sentence"},{"id":"a3","label":"Label","description":"One sentence"},{"id":"a4","label":"Label","description":"One sentence"}],"statChanges":{"Economy":0,"Military":0,"Diplomacy":0,"Stability":0,"GlobalPrestige":0},"strifeChange":0,"relationshipChanges":{"usa":0,"china":0,"russia":0},"gameOver":false,"gameOverReason":null}
 statChanges -20 to +20. strifeChange -10 to +20. If stat hits 5/95 or strife 90+, gameOver:true.`;
 
       const raw=await callClaude(gamePrompt);
@@ -547,12 +547,34 @@ statChanges -20 to +20. strifeChange -10 to +20. If stat hits 5/95 or strife 90+
         setPendingNext({situation:p.newSituation,actions:p.newActions});
       }
 
+      // Taken this code out as it is consuming a lot of credits. instead we will give newspaper on demand
       // Generate newspaper in background
-      setNewspaperLoading(true);
-      generateNewspaper(country,scenario,action.label,p.worldReaction,turn,newStats)
-        .then(ed=>{setNewspaper(ed);setAllEditions(prev=>[...prev,ed]);setNewspaperLoading(false);})
-        .catch(()=>setNewspaperLoading(false));
+      //setNewspaperLoading(true);
+      //generateNewspaper(country,scenario,action.label,p.worldReaction,turn,newStats)
+        //.then(ed=>{setNewspaper(ed);setAllEditions(prev=>[...prev,ed]);setNewspaperLoading(false);})
+        //.catch(()=>setNewspaperLoading(false));
 
+{reactionText && (
+  <div style={{marginBottom:12}}>
+    <Divider label="WORLD PRESS REACTION"/>
+    {!newspaper && !newspaperLoading && (
+      <button onClick={() => {
+        setNewspaperLoading(true);
+        generateNewspaper(country, scenario, pendingNext?.action || "", reactionText, turn, stats)
+          .then(ed => { setNewspaper(ed); setAllEditions(prev=>[...prev,ed]); setNewspaperLoading(false); })
+          .catch(() => setNewspaperLoading(false));
+      }}
+        style={{width:"100%",padding:"10px",borderRadius:"var(--border-radius-lg)",border:"0.5px solid var(--color-border-tertiary)",background:"var(--color-background-secondary)",cursor:"pointer",fontSize:12,color:"var(--color-text-secondary)",fontFamily:"var(--font-sans)"}}>
+        📰 Generate press coverage for this turn
+      </button>
+    )}
+    {newspaperLoading && !newspaper && <NewspaperSkeleton/>}
+    {newspaper && <NewspaperPanel edition={newspaper} country={country}/>}
+  </div>
+)}
+      
+
+      
     } catch(e){alert("Error: "+e.message);setGameState("choosing");}
     setLoading(false);
   }
