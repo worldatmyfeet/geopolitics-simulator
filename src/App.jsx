@@ -374,7 +374,7 @@ function WorldEventCard({ event, country, impactedStats, prevStatsBeforeEvent, o
           </div>
 
           {/* Action buttons */}
-          <div style={{display:"flex",gap:8"}}>
+          <div style={{display:"flex",gap:8}}>
             <button onClick={onRespond} className="world-event-respond"
               style={{flex:1,padding:"9px 14px",borderRadius:"var(--border-radius-md)",border:`0.5px solid ${sevColor}`,background:"var(--color-background-primary)",cursor:"pointer",fontSize:12,fontWeight:500,color:"var(--color-text-primary)",fontFamily:"var(--font-sans)",transition:"border-color 0.15s,background 0.15s",textAlign:"center"}}>
               📋 Respond to this crisis
