@@ -94,6 +94,15 @@ const NEWS_OUTLETS = [
   { id:"al_watan", name:"Al-Watan Tribune",  bias:"gulf_conservative",accentColor:"#1d6b2f" },
 ];
 
+const MODELS = [
+  { id:"anthropic/claude-3-haiku",       label:"Claude 3 Haiku (cheapest, fast)" },
+  { id:"anthropic/claude-3.5-haiku",     label:"Claude 3.5 Haiku (better, moderate cost)" },
+  { id:"anthropic/claude-3.5-sonnet",    label:"Claude 3.5 Sonnet (best quality, higher cost)" },
+  { id:"openai/gpt-4o-mini",             label:"GPT-4o Mini (cheap, reliable)" },
+  { id:"openai/gpt-4o",                  label:"GPT-4o (high quality)" },
+  { id:"google/gemini-flash-1.5",        label:"Gemini Flash 1.5 (fast, cheap)" },
+];
+
 const COUNTRIES = [
   { id:"usa",         name:"United States",  flag:"🇺🇸", region:"North America", power:"Superpower",    gdp:25000, military:100, diplomacy:90, stability:72, internalStrife:28, alliances:["NATO","QUAD"],        threats:[],                      traits:"Global hegemon, NATO anchor, dollar dominance, polarised domestic politics" },
   { id:"china",       name:"China",          flag:"🇨🇳", region:"Asia",          power:"Superpower",    gdp:18000, military:95,  diplomacy:80, stability:78, internalStrife:18, alliances:["SCO","BRICS"],        threats:[],                      traits:"Rising superpower, Belt & Road, Taiwan ambitions, Xinjiang tensions" },
@@ -467,7 +476,7 @@ function NewspaperSkeleton() {
 
 // ── COUNTRY SELECT ────────────────────────────────────────────────────────────
 
-function CountrySelectScreen({ onSelect, apiKey, setApiKey, showApiInput, setShowApiInput }) {
+function CountrySelectScreen({ onSelect, apiKey, setApiKey, showApiInput, setShowApiInput, selectedModel, setSelectedModel }) {
   const [filter,setFilter]=useState("All");
   const regions=["All",...new Set(COUNTRIES.map(c=>c.region))];
   const filtered=filter==="All"?COUNTRIES:COUNTRIES.filter(c=>c.region===filter);
@@ -494,6 +503,16 @@ function CountrySelectScreen({ onSelect, apiKey, setApiKey, showApiInput, setSho
           {apiKey?"✓ API key set — change":"Set OpenRouter API key (required to play)"}
         </button>
       )}
+
+      {/* Model selector */}
+      <div style={{marginBottom:"1.25rem"}}>
+        <div style={{fontSize:11,color:"var(--color-text-tertiary)",marginBottom:5}}>AI Model</div>
+        <select value={selectedModel} onChange={e=>setSelectedModel(e.target.value)}
+          style={{width:"100%",maxWidth:380,fontSize:12,padding:"6px 10px",borderRadius:"var(--border-radius-md)",border:"0.5px solid var(--color-border-secondary)",background:"var(--color-background-primary)",color:"var(--color-text-primary)",cursor:"pointer"}}>
+          {MODELS.map(m=><option key={m.id} value={m.id}>{m.label}</option>)}
+        </select>
+      </div>
+
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:"1.25rem"}}>
         {regions.map(r=>(
           <button key={r} onClick={()=>setFilter(r)}
@@ -599,15 +618,17 @@ export default function GeopoliticsSimulator() {
   const lastActionRef   = useRef("");
   const lastReactionRef = useRef("");
   const lastStatsRef    = useRef({});
+  const [selectedModel, setSelectedModel] = useState("anthropic/claude-3-haiku");
 
   // ── API ──
 
-  async function callClaude(prompt, maxTokens=700, model="anthropic/claude-3-haiku") {
+  async function callClaude(prompt, maxTokens=700, model=null) {
+    const useModel = model || selectedModel;
     const key=apiKey||window.__GEO_KEY__;
     const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${key}`,"HTTP-Referer":window.location.href,"X-Title":"Geopolitics Simulator"},
-      body:JSON.stringify({model,max_tokens:maxTokens,messages:[{role:"user",content:prompt}]}),
+      body:JSON.stringify({model:useModel,max_tokens:maxTokens,messages:[{role:"user",content:prompt}]}),
     });
     const data=await res.json();
     if(data.error) throw new Error(data.error.message);
@@ -627,7 +648,6 @@ Internal strife: ${strife}/100${we}`;
 
   // Rolls for a world event. Called on Continue (after turn 2+, ~40% chance)
   function rollWorldEvent(currentStats, currentStrife) {
-    if(Math.random() > 0.40) return; // 40% chance per turn
     const event = pickWorldEvent(firedEventIds, country);
     if(!event) return;
 
@@ -758,42 +778,94 @@ Return ONLY valid JSON:
     const worldEventCtx=activeWorldEvent?`\nActive world crisis affecting this turn: "${activeWorldEvent.title}"`:"";
 
     try {
-      // Build a narrative arc tracker so the AI knows where in the story we are
-      const turnPhase = turn <= 2 ? "OPENING — crisis is fresh, stakes are being established" 
-        : turn <= 4 ? "ESCALATION — consequences of early decisions are materialising, new actors entering" 
-        : turn <= 6 ? "CRISIS PEAK — situation is at its most dangerous/complex, major decisions needed"
-        : "RESOLUTION — crisis is moving toward an endgame, player's legacy is being written";
-      const historyCtx = log.length > 0 
-        ? "PREVIOUS TURNS:\n" + log.map(l=>`T${l.turn}: Player did "${l.action}" → ${l.reaction.slice(0,120)}`).join("\n")
-        : "FIRST TURN";
+      // Narrative arc — forces dramatic escalation each turn
+      const PHASES = [
+        null,
+        "ACT 1 — OPENING MOVE: The crisis breaks. The world is watching. Establish the concrete incident and first movers clearly.",
+        "ACT 1 — FIRST CONSEQUENCES: The player's opening choice has rippled outward. A new actor has entered or an existing one has escalated. Something has changed on the ground.",
+        "ACT 2 — ESCALATION: The situation is deteriorating OR surprisingly stabilising. A major power has made a decisive move. The stakes are now significantly higher than turn 1.",
+        "ACT 2 — CRISIS DEEPENS: A secondary crisis has emerged from the first. The player's resources are stretched. Unexpected alliances or betrayals are happening.",
+        "ACT 3 — PEAK DANGER: The situation is at its most volatile. A major irreversible event must occur this turn — a war starting, a government falling, a deal being signed, a weapon being used.",
+        "ACT 3 — ENDGAME APPROACHING: The crisis is moving toward resolution. The player's cumulative decisions have shaped the outcome. Consequences of earlier choices are crystallising.",
+        "ACT 4 — DENOUEMENT: The crisis ends this turn one way or another. Generate a compelling conclusion based on the player's decisions throughout.",
+      ];
+      const turnPhase = PHASES[Math.min(turn, PHASES.length-1)] || PHASES[PHASES.length-1];
 
-      const prompt=`You are a geopolitical crisis simulation engine. Write like a veteran war correspondent reporting from the field — specific events, named people, concrete consequences. NEVER write press releases or diplomatic statements.
+      // Detect repeated action patterns — punish them
+      const recentActionTypes = log.slice(-3).map(l=>l.action.toLowerCase());
+      const repeatWarning = recentActionTypes.length >= 2 && recentActionTypes.every(a=>a.includes(recentActionTypes[0].split(" ")[0]))
+        ? `WARNING: Player has repeated similar actions (${recentActionTypes.join(", ")}). The world MUST show fatigue, diminishing returns, or backlash this turn.` : "";
 
-COUNTRY: ${country.name} (${country.power}, ${country.region})
+      // World event context for the prompt
+      const activeWeCtx = worldEventLog.length > 0
+        ? `
+ACTIVE WORLD CRISIS: "${worldEventLog.slice(-1)[0]?.event.title}" — ${worldEventLog.slice(-1)[0]?.event.description} — This MUST influence the situation this turn.`
+        : "";
+
+      // Full history for continuity
+      const historyCtx = log.length > 0
+        ? "STORY SO FAR:
+" + log.map(l=>`Turn ${l.turn}: Player chose "${l.action}" → ${l.reaction.slice(0,150)}`).join("
+")
+        : "This is the first turn.";
+
+      const prompt=`You are a master geopolitical thriller writer running a strategy simulation. Write with the urgency of a BBC war correspondent filing from the field. Every turn must feel like a new chapter — not a continuation of the same paragraph.
+
+PLAYER'S COUNTRY: ${country.name} (${country.power}, ${country.region})
 ${buildIntelBlock(country)}
 ALLIANCES: ${allyCtx||"none"} | NEARBY THREATS: ${actorCtx||"none"}
-STRIFE: ${strife}/100 | STATS: Eco ${stats.Economy} Mil ${stats.Military} Dip ${stats.Diplomacy} Sta ${stats.Stability} Pre ${stats.GlobalPrestige}
+CURRENT STATS: Economy ${stats.Economy}/100, Military ${stats.Military}/100, Diplomacy ${stats.Diplomacy}/100, Stability ${stats.Stability}/100, Prestige ${stats.GlobalPrestige}/100, Strife ${strife}/100
 
 SCENARIO: ${scenario.title}
-CURRENT SITUATION: ${situation}
-PLAYER JUST DID: "${action.label}" — ${action.description}
+SITUATION ENTERING THIS TURN: ${situation}
+PLAYER'S CHOICE THIS TURN: "${action.label}" — ${action.description}
+
 NARRATIVE PHASE: ${turnPhase}
 ${historyCtx}
-${worldEventCtx}
+${activeWeCtx}
+${repeatWarning ? "
+"+repeatWarning : ""}
 
-CRITICAL RULES — READ THESE BEFORE WRITING:
-1. "worldReaction" must describe CONCRETE EVENTS THAT HAPPEN as a result — troop movements, market crashes, emergency sessions, border closures, arrests, missile launches, sanctions imposed, allies defecting, coups attempted. NOT quotes from leaders. NOT diplomatic statements. EVENTS.
-2. Each turn must ADVANCE THE PLOT meaningfully. The situation must be NOTICEABLY DIFFERENT from last turn. If the player did diplomacy last turn, this turn China has either agreed to a deal with conditions OR walked away OR a third party has intervened. Never just "tensions continue."
-3. "internalConsequence" must describe something HAPPENING INSIDE ${country.name} — a general resigning, parliament voting, protests breaking out, a faction making a move, an ally calling an emergency meeting
-4. "newSituation" MUST introduce a NEW development that didn't exist before — a new actor entering, a deadline being set, a secret revealed, an unexpected alliance forming, a crisis escalating in a new dimension. The next turn's options should feel completely different from this turn's.
-5. If the player has been doing the same type of action repeatedly (check history), make the world react with FATIGUE or DIMINISHING RETURNS — allies get frustrated, rivals get bolder, domestic pressure mounts
-6. Name specific leaders by name when describing their actions (Putin ordered X, Xi Jinping's State Council voted Y, Modi convened the Cabinet Committee on Security)
+═══ IRON RULES — VIOLATING THESE RUINS THE GAME ═══
 
+RULE 1 — EVENTS NOT STATEMENTS:
+worldReaction must describe PHYSICAL EVENTS with named actors:
+✓ GOOD: "Putin's FSB detained three American journalists in Moscow and expelled the US Ambassador within 24 hours."
+✓ GOOD: "The Chinese carrier Liaoning entered the Taiwan Strait. Markets in Tokyo dropped 8% at open."
+✗ BAD: "World leaders expressed concern." "China warned that..." "The US called for restraint."
+
+RULE 2 — MANDATORY STEP CHANGE EACH TURN:
+The newSituation CANNOT echo the previous situation. It MUST contain:
+- At least one named actor who wasn't in the previous situation, OR
+- A concrete deadline (48 hours, UN vote Thursday, troops mobilised by dawn), OR
+- An irreversible event that happened (territory taken, leader killed, deal signed, sanctions imposed), OR
+- A twist that reframes the whole crisis (secret revealed, unexpected ally, betrayal)
+
+RULE 3 — MAKE STATS HURT AND MATTER:
+Good diplomatic breakthrough: Diplomacy +10 to +14, GlobalPrestige +6 to +10
+Military aggression backfires: Stability -10 to -14, GlobalPrestige -8 to -12
+Economic crisis deepens: Economy -10 to -14, Strife +8 to +12
+Successful deterrence: Military +6, Stability +4, Diplomacy -4
+Small timid actions get SMALL changes (±2 to ±4). Decisive actions get BIG changes (±8 to ±14).
+
+RULE 4 — WIN/LOSS CONDITIONS:
+If stats reach these THRESHOLDS, trigger gameOver:
+- Economy drops below 20: economic collapse, revolution inevitable
+- Stability drops below 15: state has collapsed or civil war is unwinnable
+- Strife exceeds 88: regime change or dissolution
+- Economy + Stability both above 80 AND Diplomacy above 75 after turn 5+: VICTORY — crisis resolved
+- GlobalPrestige above 85 AND Economy above 75 after turn 5+: DIPLOMATIC VICTORY
+When triggering gameOver:true, write a vivid 3-sentence gameOverReason that describes WHAT SPECIFICALLY HAPPENED — not generic "the nation collapsed" but "Modi's government fell in a no-confidence vote after the Arunachal Pradesh military disaster. The BJP lost 180 seats. China signed a border treaty with the new coalition government that ceded the disputed valley permanently."
+
+RULE 5 — WORLD CRISES MUST RESHAPE THE SITUATION:
+If there is an active world crisis listed above, it MUST appear concretely in worldReaction AND in newSituation. It cannot be ignored.
+
+═══ OUTPUT ═══
 Return ONLY valid JSON (no markdown, no + signs before numbers):
-{"worldReaction":"2-3 sentences of CONCRETE EVENTS that happened — what moved, who acted, what changed on the ground. No diplomatic statements. Name leaders doing things, not saying things.","internalConsequence":"1 sentence: something HAPPENING inside ${country.name} with a named actor — a resignation, a vote, protests, a faction making a move.","nonStateActorEvent":null,"newSituation":"2-3 sentences introducing a GENUINELY NEW development for next turn. Must name a new element that wasn't in the current situation. The player should face a meaningfully different landscape.","newActions":[{"id":"a1","label":"5 word max label","description":"Concrete sentence with named tradeoff"},{"id":"a2","label":"5 word max label","description":"Concrete sentence with named tradeoff"},{"id":"a3","label":"5 word max label","description":"Concrete sentence with named tradeoff"},{"id":"a4","label":"5 word max label","description":"Concrete sentence with named tradeoff"}],"statChanges":{"Economy":0,"Military":0,"Diplomacy":0,"Stability":0,"GlobalPrestige":0},"strifeChange":0,"relationshipChanges":{"usa":0,"china":0,"russia":0},"gameOver":false,"gameOverReason":null}
-NUMBERS: plain integers only. statChanges -15 to 15. strifeChange -10 to 15. Make stat changes MEANINGFUL — diplomatic success should actually move Diplomacy +8 to +12, not +2. A military disaster should hit Stability -10, not -2. gameOver if stat hits 5/95 or strife 90.`;
+{"worldReaction":"3 sentences of CONCRETE EVENTS. Name leaders by name doing specific things. What physically changed on the ground, in markets, or in governments?","internalConsequence":"1 sentence: a SPECIFIC internal event — a named minister resigned, parliament voted X to Y, protests in [city], a general issued a public statement defying orders.","nonStateActorEvent":null,"newSituation":"3 sentences with a MANDATORY STEP CHANGE. Name at least one new actor or new development. Set a concrete deadline or describe an irreversible event that just occurred.","newActions":[{"id":"a1","label":"5 word max","description":"Concrete action with named tradeoff — who gains, who loses"},{"id":"a2","label":"5 word max","description":"Concrete action with named tradeoff"},{"id":"a3","label":"5 word max","description":"Concrete action with named tradeoff"},{"id":"a4","label":"5 word max","description":"Concrete action with named tradeoff"}],"statChanges":{"Economy":0,"Military":0,"Diplomacy":0,"Stability":0,"GlobalPrestige":0},"strifeChange":0,"relationshipChanges":{"usa":0,"china":0,"russia":0},"gameOver":false,"gameOverReason":null}
+Numbers: plain integers only, NO + signs. Large decisive actions get large stat changes (±8 to ±14). Small timid actions get small changes (±2 to ±5). Check WIN/LOSS CONDITIONS above before setting gameOver.`;
 
-      const raw=await callClaude(prompt,750);
+      const raw=await callClaude(prompt,900);
       const p=safeParseJSON(raw);
 
       const snapshot={...stats};
@@ -895,18 +967,19 @@ Return this EXACT JSON structure (fill in all fields, keep values short):
     setNewspaper(null); setNewspaperLoading(false);
     setPendingNext(null); setActiveWorldEvent(null);
 
-    // Roll for a world event on turns 2+ (after a short delay so state settles)
-    if(turn >= 1) {
-      setTimeout(()=>{
-        rollWorldEvent(pendingNext.statsForEvent||stats, pendingNext.strifeForEvent||strife);
-      }, 300);
+    // Roll for a world event — 50% chance from turn 2, guaranteed by turn 4 if none yet
+    const shouldForce = turn >= 4 && worldEventLog.length === 0 && firedEventIds.length === 0;
+    if(shouldForce || (turn >= 1 && Math.random() < 0.50)) {
+      const evtStats = pendingNext.statsForEvent || stats;
+      const evtStrife = pendingNext.strifeForEvent || strife;
+      setTimeout(()=>{ rollWorldEvent(evtStats, evtStrife); }, 400);
     }
   }
 
   // ── PLAYING SCREEN ──
 
   if(phase==="select_country") return (
-    <CountrySelectScreen onSelect={c=>{setCountry(c);setPhase("select_scenario");}} apiKey={apiKey} setApiKey={setApiKey} showApiInput={showApiInput} setShowApiInput={setShowApiInput}/>
+    <CountrySelectScreen onSelect={c=>{setCountry(c);setPhase("select_scenario");}} apiKey={apiKey} setApiKey={setApiKey} showApiInput={showApiInput} setShowApiInput={setShowApiInput} selectedModel={selectedModel} setSelectedModel={setSelectedModel}/>
   );
   if(phase==="select_scenario") return (
     <ScenarioSelectScreen country={country} onSelect={s=>{setScenario(s);startGame(country,s);}} onBack={()=>setPhase("select_country")} loading={loading}/>
@@ -1147,54 +1220,111 @@ Return this EXACT JSON structure (fill in all fields, keep values short):
   // ── RESULT ──
 
   if(phase==="result"){
+    const eco=stats.Economy, mil=stats.Military, dip=stats.Diplomacy, sta=stats.Stability, pre=stats.GlobalPrestige;
     const avg=Math.round(STAT_KEYS.reduce((s,k)=>s+stats[k],0)/STAT_KEYS.length);
-    const outcome=avg>65?{label:"Diplomatic Triumph",color:"#22c55e",icon:"🏆"}:avg>45?{label:"Uneasy Stalemate",color:"#f59e0b",icon:"⚖️"}:{label:"State Collapse",color:"#ef4444",icon:"💥"};
+
+    // Rich outcome calculation based on how different stats ended up
+    let outcome;
+    if(eco>78 && sta>78 && dip>73 && pre>80)
+      outcome={grade:"S",label:"Grand Statesman",sublabel:"A masterclass in crisis diplomacy",color:"#8b5cf6",icon:"👑",bg:"#f5f3ff"};
+    else if(eco>72 && sta>72 && dip>68)
+      outcome={grade:"A",label:"Diplomatic Triumph",sublabel:"The crisis resolved in your favour",color:"#22c55e",icon:"🏆",bg:"#f0fdf4"};
+    else if(pre>78 && dip>70)
+      outcome={grade:"A-",label:"Prestige Victory",sublabel:"Your global standing has never been higher",color:"#3b82f6",icon:"🌟",bg:"#eff6ff"};
+    else if(mil>80 && sta>60)
+      outcome={grade:"B+",label:"Military Deterrence",sublabel:"Strength kept the wolves at bay",color:"#f59e0b",icon:"⚔️",bg:"#fffbeb"};
+    else if(avg>55)
+      outcome={grade:"B",label:"Managed Crisis",sublabel:"Bruised but still standing",color:"#f59e0b",icon:"⚖️",bg:"#fffbeb"};
+    else if(avg>40)
+      outcome={grade:"C",label:"Uneasy Stalemate",sublabel:"Neither victory nor defeat — just survival",color:"#94a3b8",icon:"😓",bg:"#f8fafc"};
+    else if(eco<20)
+      outcome={grade:"F",label:"Economic Collapse",sublabel:"The treasury is empty, the streets are burning",color:"#ef4444",icon:"📉",bg:"#fef2f2"};
+    else if(sta<15)
+      outcome={grade:"F",label:"State Collapse",sublabel:"The government has fallen",color:"#ef4444",icon:"💥",bg:"#fef2f2"};
+    else if(strife>85)
+      outcome={grade:"F",label:"Civil War",sublabel:"Internal strife has torn the nation apart",color:"#ef4444",icon:"🔥",bg:"#fef2f2"};
+    else
+      outcome={grade:"D",label:"Crisis Defeat",sublabel:"The nation is weakened and isolated",color:"#ef4444",icon:"☠️",bg:"#fef2f2"};
+
+    const scorecard = [
+      { stat:"Economy",        value:eco, comment: eco>75?"Resilient":eco>50?"Strained":eco>25?"Damaged":"Collapsed" },
+      { stat:"Military",       value:mil, comment: mil>75?"Dominant":mil>50?"Capable":mil>25?"Weakened":"Broken" },
+      { stat:"Diplomacy",      value:dip, comment: dip>75?"Respected":dip>50?"Engaged":dip>25?"Isolated":"Pariah" },
+      { stat:"Stability",      value:sta, comment: sta>75?"Stable":sta>50?"Fragile":sta>25?"Volatile":"Collapsed" },
+      { stat:"GlobalPrestige", value:pre, comment: pre>75?"Renowned":pre>50?"Recognised":pre>25?"Diminished":"Disgraced" },
+    ];
+
     return (
-      <div style={{fontFamily:"var(--font-sans)",maxWidth:700,margin:"0 auto",padding:"2rem 1rem"}}>
+      <div style={{fontFamily:"var(--font-sans)",maxWidth:740,margin:"0 auto",padding:"2rem 1rem"}}>
         <style>{G}</style>
-        <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
-          <div style={{fontSize:52,marginBottom:12}}>{outcome.icon}</div>
-          <div style={{fontSize:10,letterSpacing:"0.12em",color:"var(--color-text-tertiary)",fontFamily:"var(--font-mono)",marginBottom:6}}>GAME OVER — {turn} TURNS</div>
-          <h2 style={{fontSize:24,fontWeight:500,color:outcome.color,margin:"0 0 1rem",letterSpacing:"-0.02em"}}>{outcome.label}</h2>
+
+        {/* Outcome hero */}
+        <div style={{background:outcome.bg,border:`1.5px solid ${outcome.color}40`,borderRadius:"var(--border-radius-lg)",padding:"1.5rem",textAlign:"center",marginBottom:"1.25rem"}}>
+          <div style={{fontSize:60,marginBottom:10,lineHeight:1}}>{outcome.icon}</div>
+          <div style={{display:"inline-block",fontSize:11,padding:"3px 10px",borderRadius:99,background:outcome.color,color:"#fff",fontFamily:"var(--font-mono)",letterSpacing:"0.1em",marginBottom:8}}>
+            GRADE {outcome.grade} &nbsp;·&nbsp; {turn} TURNS
+          </div>
+          <h2 style={{fontSize:26,fontWeight:500,color:outcome.color,margin:"6px 0 4px",letterSpacing:"-0.02em"}}>{outcome.label}</h2>
+          <p style={{fontSize:13,color:"var(--color-text-secondary)",margin:0}}>{outcome.sublabel}</p>
         </div>
+
+        {/* Final situation narrative */}
         <div style={{background:"var(--color-background-secondary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:"var(--border-radius-lg)",padding:"1rem 1.25rem",marginBottom:"1.25rem"}}>
+          <SectionLabel>Final Report</SectionLabel>
           <p style={{fontSize:14,lineHeight:1.8,margin:0}}>{situation}</p>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,marginBottom:"1.25rem"}}>
-          {STAT_KEYS.map(k=><StatPill key={k} label={k} value={stats[k]}/>)}
+
+        {/* Scorecard */}
+        <div style={{marginBottom:"1.25rem"}}>
+          <SectionLabel>Final Scorecard</SectionLabel>
+          <div style={{display:"grid",gap:8}}>
+            {scorecard.map(({stat,value,comment})=>{
+              const color=value>65?"#22c55e":value>35?"#f59e0b":"#ef4444";
+              return (
+                <div key={stat} style={{display:"grid",gridTemplateColumns:"110px 1fr 60px 80px",alignItems:"center",gap:10,background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:"var(--border-radius-md)",padding:"8px 14px"}}>
+                  <span style={{fontSize:12,color:"var(--color-text-secondary)",fontFamily:"var(--font-mono)"}}>{stat.toUpperCase().slice(0,8)}</span>
+                  <div style={{height:6,background:"var(--color-background-tertiary)",borderRadius:3,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${value}%`,background:color,borderRadius:3}}/>
+                  </div>
+                  <span style={{fontSize:13,fontWeight:500,color,textAlign:"right"}}>{value}</span>
+                  <span style={{fontSize:10,color:color,textAlign:"right",fontFamily:"var(--font-mono)"}}>{comment}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* World crisis summary */}
         {worldEventLog.length>0&&(
-          <>
-            <Divider label="WORLD CRISES DURING YOUR TENURE"/>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8,marginBottom:"1.25rem"}}>
+          <div style={{marginBottom:"1.25rem"}}>
+            <Divider label={"WORLD CRISES NAVIGATED ("+worldEventLog.length+")"}/>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:8}}>
               {worldEventLog.map((entry,i)=>(
                 <div key={i} style={{padding:"10px 12px",borderRadius:"var(--border-radius-md)",border:`0.5px solid ${SEV_COLOR[entry.event.severity]}40`,borderLeft:`3px solid ${SEV_COLOR[entry.event.severity]}`,background:SEV_BG[entry.event.severity]}}>
-                  <div style={{fontSize:9,color:SEV_COLOR[entry.event.severity],fontFamily:"var(--font-mono)",marginBottom:4}}>T{entry.turn} · {entry.event.severity.toUpperCase()}</div>
-                  <div style={{fontSize:12,fontWeight:500,color:"#1a1a1a"}}>{entry.event.icon} {entry.event.title}</div>
-                  <div style={{fontSize:10,color:"#555",lineHeight:1.4,marginTop:3}}>{entry.event.description.slice(0,80)}...</div>
+                  <div style={{fontSize:9,color:SEV_COLOR[entry.event.severity],fontFamily:"var(--font-mono)",marginBottom:3}}>T{entry.turn} · {entry.event.severity.toUpperCase()}</div>
+                  <div style={{fontSize:11,fontWeight:500,color:"#1a1a1a"}}>{entry.event.icon} {entry.event.title}</div>
                 </div>
               ))}
             </div>
-          </>
+          </div>
         )}
 
+        {/* Press archive */}
         {allEditions.length>0&&(
-          <>
+          <div style={{marginBottom:"1.5rem"}}>
             <Divider label="YOUR TENURE IN THE WORLD PRESS"/>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8,marginBottom:"1.5rem"}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:8}}>
               {allEditions.flatMap((ed,i)=>(ed.papers||[]).slice(0,1).map((p,j)=>{
                 const o=NEWS_OUTLETS.find(x=>x.id===p.outletId)||NEWS_OUTLETS[0];
                 return (
                   <div key={`${i}-${j}`} style={{padding:"10px 12px",borderRadius:"var(--border-radius-md)",border:`0.5px solid ${o.accentColor}40`,borderLeft:`3px solid ${o.accentColor}`,background:"#faf8f2"}}>
-                    <div style={{fontSize:9,color:o.accentColor,fontFamily:"Georgia,serif",fontWeight:700,marginBottom:4}}>T{ed.turn} · {o.name}</div>
+                    <div style={{fontSize:9,color:o.accentColor,fontFamily:"Georgia,serif",fontWeight:700,marginBottom:3}}>T{ed.turn} · {o.name}</div>
                     <div style={{fontSize:11,fontFamily:"Georgia,serif",lineHeight:1.4,color:"#1a1a1a"}}>{p.headline}</div>
                   </div>
                 );
               }))}
             </div>
-          </>
+          </div>
         )}
 
         <div style={{display:"flex",gap:10,justifyContent:"center"}}>
